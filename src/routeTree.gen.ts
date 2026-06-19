@@ -9,38 +9,116 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppOfficeActionAnalyzerRouteImport } from './routes/app.office-action-analyzer'
+import { Route as AppProjectIdRouteImport } from './routes/app.project.$id'
 
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOfficeActionAnalyzerRoute = AppOfficeActionAnalyzerRouteImport.update({
+  id: '/office-action-analyzer',
+  path: '/office-action-analyzer',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProjectIdRoute = AppProjectIdRouteImport.update({
+  id: '/project/$id',
+  path: '/project/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
+  '/app/': typeof AppIndexRoute
+  '/app/project/$id': typeof AppProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
+  '/app': typeof AppIndexRoute
+  '/app/project/$id': typeof AppProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
+  '/app/': typeof AppIndexRoute
+  '/app/project/$id': typeof AppProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/app/office-action-analyzer'
+    | '/app/'
+    | '/app/project/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/app/office-action-analyzer'
+    | '/app'
+    | '/app/project/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/app/office-action-analyzer'
+    | '/app/'
+    | '/app/project/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +126,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/': {
+      id: '/app/'
+      path: '/'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/office-action-analyzer': {
+      id: '/app/office-action-analyzer'
+      path: '/office-action-analyzer'
+      fullPath: '/app/office-action-analyzer'
+      preLoaderRoute: typeof AppOfficeActionAnalyzerRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/project/$id': {
+      id: '/app/project/$id'
+      path: '/project/$id'
+      fullPath: '/app/project/$id'
+      preLoaderRoute: typeof AppProjectIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppOfficeActionAnalyzerRoute: typeof AppOfficeActionAnalyzerRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppProjectIdRoute: typeof AppProjectIdRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppOfficeActionAnalyzerRoute: AppOfficeActionAnalyzerRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppProjectIdRoute: AppProjectIdRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
