@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as AppOfficeActionAnalyzerRouteImport } from './routes/app.office-action-analyzer'
 import { Route as AppProjectIdRouteImport } from './routes/app.project.$id'
 
 const AuthRoute = AuthRouteImport.update({
@@ -35,6 +36,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOfficeActionAnalyzerRoute = AppOfficeActionAnalyzerRouteImport.update({
+  id: '/office-action-analyzer',
+  path: '/office-action-analyzer',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProjectIdRoute = AppProjectIdRouteImport.update({
   id: '/project/$id',
   path: '/project/$id',
@@ -45,12 +51,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
   '/app/': typeof AppIndexRoute
   '/app/project/$id': typeof AppProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
   '/app': typeof AppIndexRoute
   '/app/project/$id': typeof AppProjectIdRoute
 }
@@ -59,15 +67,34 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
   '/app/': typeof AppIndexRoute
   '/app/project/$id': typeof AppProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/app' | '/auth' | '/app/' | '/app/project/$id'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/app/office-action-analyzer'
+    | '/app/'
+    | '/app/project/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/app' | '/app/project/$id'
-  id: '__root__' | '/' | '/app' | '/auth' | '/app/' | '/app/project/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/app/office-action-analyzer'
+    | '/app'
+    | '/app/project/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/auth'
+    | '/app/office-action-analyzer'
+    | '/app/'
+    | '/app/project/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/office-action-analyzer': {
+      id: '/app/office-action-analyzer'
+      path: '/office-action-analyzer'
+      fullPath: '/app/office-action-analyzer'
+      preLoaderRoute: typeof AppOfficeActionAnalyzerRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/project/$id': {
       id: '/app/project/$id'
       path: '/project/$id'
@@ -117,11 +151,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppOfficeActionAnalyzerRoute: typeof AppOfficeActionAnalyzerRoute
   AppIndexRoute: typeof AppIndexRoute
   AppProjectIdRoute: typeof AppProjectIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppOfficeActionAnalyzerRoute: AppOfficeActionAnalyzerRoute,
   AppIndexRoute: AppIndexRoute,
   AppProjectIdRoute: AppProjectIdRoute,
 }
