@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Info, Calendar, User, Building, FileText, Minus } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { fetchUsptoDocuments } from "@/lib/uspto.functions";
 
 interface GeneralSectionProps {
   apiData?: any;
@@ -48,10 +49,9 @@ export const GeneralSection = ({ apiData }: GeneralSectionProps) => {
     if (!data?.applicationNumberText) return;
     setDocumentsLoading(true);
     try {
-      const res = await fetch(
-        `https://corsproxy.io/?url=https://obwb.fenix.ai/api/odp/applications/${data.applicationNumberText}/documents`,
-      );
-      const json = await res.json();
+      const json = await fetchUsptoDocuments({
+        data: { applicationNumber: data.applicationNumberText },
+      });
       setDocuments(json.documentBag || []);
     } catch (e) {
       console.error("Error fetching documents:", e);
@@ -210,7 +210,7 @@ export const GeneralSection = ({ apiData }: GeneralSectionProps) => {
                       if (!url) return;
                       toast({ title: "Download starting", description: doc.documentCodeDescriptionText });
                       window.open(
-                        `https://obwb.fenix.ai/api/odp/download?url=${encodeURIComponent(url)}`,
+                        `/api/uspto-download?url=${encodeURIComponent(url)}`,
                         "_blank",
                       );
                     }}
