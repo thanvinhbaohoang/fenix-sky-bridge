@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { GeneralSection } from "@/components/office-action/GeneralSection";
 import { GeneralSectionSkeleton } from "@/components/ui/section-skeleton";
+import { fetchUsptoApplication } from "@/lib/uspto.functions";
 
 const searchSchema = z.object({
   applicationNumber: z.string().optional(),
@@ -32,11 +33,9 @@ function OfficeActionAnalyzer() {
     if (!filtered) return;
     setIsAnalyzing(true);
     try {
-      const res = await fetch(
-        `https://corsproxy.io/?url=https://obwb.fenix.ai/api/odp/applications/${filtered}`,
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+      const data = await fetchUsptoApplication({
+        data: { applicationNumber: filtered },
+      });
       setApiData(data);
       toast({ title: "Analysis Complete", description: "General information has been extracted." });
     } catch (e: any) {
