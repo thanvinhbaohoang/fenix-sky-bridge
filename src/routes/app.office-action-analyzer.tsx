@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { GeneralSection } from "@/components/office-action/GeneralSection";
 import { GeneralSectionSkeleton } from "@/components/ui/section-skeleton";
 import { fetchUsptoApplication } from "@/lib/uspto.functions";
+import { OcrPipeline } from "@/components/office-action/OcrPipeline";
+import { ClientOnly } from "@tanstack/react-router";
 
 const searchSchema = z.object({
   applicationNumber: z.string().optional(),
@@ -193,6 +195,19 @@ function OfficeActionAnalyzer() {
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {apiData && (
+            <div className="mb-8 animate-fade-in">
+              <ClientOnly fallback={null}>
+                <OcrPipeline
+                  applicationNumber={
+                    apiData?.patentFileWrapperDataBag?.[0]?.applicationNumberText ||
+                    applicationNumber
+                  }
+                />
+              </ClientOnly>
+            </div>
           )}
         </div>
       </main>
