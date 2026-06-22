@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DemoRouteImport } from './routes/demo'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,6 +18,11 @@ import { Route as AppOfficeActionAnalyzerRouteImport } from './routes/app.office
 import { Route as ApiUsptoDownloadRouteImport } from './routes/api/uspto-download'
 import { Route as AppProjectIdRouteImport } from './routes/app.project.$id'
 
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/demo': typeof DemoRoute
   '/api/uspto-download': typeof ApiUsptoDownloadRoute
   '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
   '/app/': typeof AppIndexRoute
@@ -65,6 +72,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/demo': typeof DemoRoute
   '/api/uspto-download': typeof ApiUsptoDownloadRoute
   '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
   '/app': typeof AppIndexRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/demo': typeof DemoRoute
   '/api/uspto-download': typeof ApiUsptoDownloadRoute
   '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
   '/app/': typeof AppIndexRoute
@@ -86,6 +95,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/demo'
     | '/api/uspto-download'
     | '/app/office-action-analyzer'
     | '/app/'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/demo'
     | '/api/uspto-download'
     | '/app/office-action-analyzer'
     | '/app'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/auth'
+    | '/demo'
     | '/api/uspto-download'
     | '/app/office-action-analyzer'
     | '/app/'
@@ -113,11 +125,19 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRoute
+  DemoRoute: typeof DemoRoute
   ApiUsptoDownloadRoute: typeof ApiUsptoDownloadRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -188,6 +208,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRoute,
+  DemoRoute: DemoRoute,
   ApiUsptoDownloadRoute: ApiUsptoDownloadRoute,
 }
 export const routeTree = rootRouteImport
