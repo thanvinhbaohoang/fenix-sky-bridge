@@ -9,7 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { GeneralSection } from "@/components/office-action/GeneralSection";
 import { GeneralSectionSkeleton } from "@/components/ui/section-skeleton";
 import { fetchUsptoApplication } from "@/lib/uspto.functions";
+import { fetchUsptoTransactions } from "@/lib/uspto.functions";
 import { OcrPipeline } from "@/components/office-action/OcrPipeline";
+import { TransactionsTimeline } from "@/components/office-action/TransactionsTimeline";
 import { ClientOnly } from "@tanstack/react-router";
 
 const searchSchema = z.object({
@@ -28,18 +30,29 @@ function OfficeActionAnalyzer() {
   const [applicationNumber, setApplicationNumber] = useState(search.applicationNumber ?? "");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [apiData, setApiData] = useState<any>(null);
+  const [transactions, setTransactions] = useState<any>(null);
   const [currentProject, setCurrentProject] = useState<any>(null);
 
   const runAnalysis = async (raw: string) => {
     const filtered = raw.replace(/\D/g, "");
     if (!filtered) return;
     setIsAnalyzing(true);
+    setTransactions(null);
     try {
       const data = await fetchUsptoApplication({
         data: { applicationNumber: filtered },
       });
       setApiData(data);
       toast({ title: "Analysis Complete", description: "General information has been extracted." });
+      try {
+        const tx = await fetchUsptoTransactions({
+          data: { applicationNumber: filtered },
+        });
+        setTransactions(tx);
+      } catch (txErr: any) {
+        console.error("transactions fetch failed", txErr);
+        toast({ title: "Timeline unavailable", description: txErr.message, variant: "destructive" });
+      }
     } catch (e: any) {
       console.error(e);
       toast({ title: "Analysis Failed", description: e.message, variant: "destructive" });
@@ -169,6 +182,12 @@ function OfficeActionAnalyzer() {
           {apiData && (
             <div className="mb-8 animate-fade-in">
               <GeneralSection apiData={apiData} />
+            </div>
+          )}
+
+          {transactions && (
+            <div className="mb-8 animate-fade-in">
+              <TransactionsTimeline data={transactions} />
             </div>
           )}
 

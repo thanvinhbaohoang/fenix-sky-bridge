@@ -66,3 +66,21 @@ export const fetchUsptoDocuments = createServerFn({ method: "POST" })
     }
     return await response.json();
   });
+
+export const fetchUsptoTransactions = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z.object({ applicationNumber: z.string().min(1) }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const clean = data.applicationNumber.replace(/\D/g, "");
+    if (!clean) throw new Error("Invalid application number");
+    const url = `https://api.uspto.gov/api/v1/patent/applications/${clean}/transactions`;
+    const response = await usptoFetch(url);
+    if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      throw new Error(
+        `USPTO transactions error ${response.status}: ${body.slice(0, 200)}`,
+      );
+    }
+    return await response.json();
+  });
