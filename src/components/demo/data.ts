@@ -25,6 +25,23 @@ export const DOCKETABLE = [
   "CTAV","CTNF","CTFR","CTRS","ABN","NOA","ISSUE.NTF","NTC.PUB","APP.FILE.REC","RCEX",
 ];
 
+// Codes that, when present AND more recent, cancel an older event
+export const SUPERSEDED_BY: Record<string, string[]> = {
+  CTNF: ["CTFR", "NOA", "RCEX"],
+  CTFR: ["RCEX", "NOA"],
+  CTAV: ["RCEX", "NOA"],
+  NOA: ["ISSUE.NTF"],
+  CTRS: ["CTNF", "CTFR", "NOA"],
+};
+
+// Mail-date companions — use these for deadline calculation, not the event date
+export const MAIL_CODE_MAP: Record<string, string> = {
+  CTNF: "MCTNF",
+  CTFR: "MCTFR",
+  CTAV: "MCTAV",
+  NOA: "MNOA",
+};
+
 export const EVENT_LABELS: Record<string, string> = {
   RCEX: "Request for Continued Examination",
   CTNF: "Non-Final Rejection",
@@ -130,8 +147,24 @@ export const EVENT_ICONS: Record<string, string> = {
 };
 
 export function detectEvent(txs: Transaction[]): Transaction | undefined {
+  // Most recent first
   const sorted = [...txs].sort((a, b) => (a.date < b.date ? 1 : -1));
-  return sorted.find((t) => DOCKETABLE.includes(t.code));
+  return sorted.find((t) => {
+    if (!DOCKETABLE.includes(t.code)) return false;
+    const cancellers = SUPERSEDED_BY[t.code] ?? [];
+    // Only cancel when a cancelling event exists AND is more recent than `t`
+    const cancelled = cancellers.some((c) => {
+      const ev = sorted.find((tx) => tx.code === c);
+      return ev && new Date(ev.date).getTime() > new Date(t.date).getTime();
+    });
+    return !cancelled;
+  });
+}
+
+export function getMailDate(event: Transaction, txs: Transaction[]): string {
+  const mailCode = MAIL_CODE_MAP[event.code];
+  if (!mailCode) return event.date;
+  return txs.find((t) => t.code === mailCode)?.date ?? event.date;
 }
 
 export const APPS: Record<string, AppData> = {
@@ -148,9 +181,11 @@ export const APPS: Record<string, AppData> = {
       { code: "ABN9", description: "Disposal for RCE", date: "2026-06-01" },
       { code: "RCEX", description: "Request for Continued Examination", date: "2026-05-21" },
       { code: "CTAV", description: "Advisory Action (PTOL-303)", date: "2026-04-24" },
-      { code: "CTFR", description: "Final Rejection", date: "2026-02-10" },
+      { code: "MCTFR", description: "Mail Final Rejection", date: "2026-01-18" },
+      { code: "CTFR", description: "Final Rejection", date: "2026-01-16" },
+      { code: "CTNF", description: "Non-Final Rejection", date: "2025-08-20" },
       { code: "WIDS", description: "IDS Filed", date: "2026-01-14" },
-      { code: "APP.FILE.REC", description: "Filing Receipt", date: "2022-03-10" },
+      { code: "APP.FILE.REC", description: "Filing Receipt", date: "2022-11-01" },
     ],
     citations: [
       { reference: "JP 2018-502847", type: "Foreign", source: "IDS", pages: "32", crossCite: true, needsTranslation: true },
