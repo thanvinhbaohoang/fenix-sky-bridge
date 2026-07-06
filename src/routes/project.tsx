@@ -60,7 +60,10 @@ function ProjectPage() {
 
   const goToApp = (nextApp: string) => {
     navigate({
-      search: (prev) => ({ ...prev, app: nextApp.trim() || undefined }),
+      search: (prev: { app?: string; template?: string }) => ({
+        ...prev,
+        app: nextApp.trim() || undefined,
+      }),
     });
   };
 
