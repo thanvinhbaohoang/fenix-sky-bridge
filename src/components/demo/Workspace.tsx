@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   APPS,
   AppData,
@@ -55,6 +55,183 @@ function Avatar({ name }: { name: string | null }) {
   );
 }
 
+export type Contact = { name: string; email: string };
+
+const CONTACTS_KEY = "fenixai.contacts.v1";
+
+function loadContacts(clientName: string): Contact[] {
+  const defaults: Contact[] = [
+    { name: "S. Reyes", email: "s.reyes@fenixai.law" },
+    { name: "M. Kim", email: "m.kim@fenixai.law" },
+    { name: "J. Lee", email: "j.lee@fenixai.law" },
+    { name: `${clientName} IP Team`, email: "ip@client.com" },
+  ];
+  if (typeof window === "undefined") return defaults;
+  try {
+    const raw = localStorage.getItem(CONTACTS_KEY);
+    if (!raw) return defaults;
+    const parsed = JSON.parse(raw) as Contact[];
+    // merge with defaults by name
+    const map = new Map(defaults.map((c) => [c.name, c] as const));
+    for (const c of parsed) map.set(c.name, c);
+    return Array.from(map.values());
+  } catch {
+    return defaults;
+  }
+}
+
+function saveContacts(list: Contact[]) {
+  try {
+    localStorage.setItem(CONTACTS_KEY, JSON.stringify(list));
+  } catch {}
+}
+
+function ReassignPicker({
+  current,
+  contacts,
+  onPick,
+  onAdd,
+  onClose,
+  align = "left",
+}: {
+  current: string | null;
+  contacts: Contact[];
+  onPick: (name: string | null) => void;
+  onAdd: (c: Contact) => void;
+  onClose: () => void;
+  align?: "left" | "right";
+}) {
+  const [q, setQ] = useState("");
+  const [showAdd, setShowAdd] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+
+  const filtered = contacts.filter(
+    (c) =>
+      c.name.toLowerCase().includes(q.toLowerCase()) ||
+      c.email.toLowerCase().includes(q.toLowerCase()),
+  );
+
+  const submitAdd = (e: FormEvent) => {
+    e.preventDefault();
+    const name = newName.trim();
+    const email = newEmail.trim();
+    if (!name || !email) return;
+    onAdd({ name, email });
+    onPick(name);
+  };
+
+  return (
+    <div
+      ref={ref}
+      onClick={(e) => e.stopPropagation()}
+      className={`absolute z-30 top-full mt-1 ${align === "right" ? "right-0" : "left-0"} w-72 rounded-lg border border-zinc-700 bg-zinc-900 shadow-xl`}
+    >
+      <div className="p-2 border-b border-zinc-800">
+        <input
+          autoFocus
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search Email contacts…"
+          className="w-full h-8 px-2 rounded bg-zinc-950 border border-zinc-800 text-xs focus:outline-none focus:border-zinc-600"
+        />
+      </div>
+      <div className="max-h-56 overflow-y-auto py-1">
+        {filtered.map((c) => {
+          const active = c.name === current;
+          return (
+            <button
+              key={c.name + c.email}
+              onClick={() => onPick(c.name)}
+              className={`w-full text-left px-3 py-1.5 flex items-center gap-2 hover:bg-zinc-800 ${active ? "bg-zinc-800/60" : ""}`}
+            >
+              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full text-[10px] font-semibold text-white bg-zinc-700">
+                {c.name.split(/[ .]+/).map((s) => s[0]).slice(0, 2).join("")}
+              </span>
+              <span className="flex-1 min-w-0">
+                <div className="text-xs text-zinc-200 truncate">{c.name}</div>
+                <div className="text-[10px] text-zinc-500 truncate">{c.email}</div>
+              </span>
+              {active && <span className="text-teal-400 text-xs">✓</span>}
+            </button>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div className="px-3 py-4 text-[11px] text-zinc-500 text-center">
+            No matching contacts
+          </div>
+        )}
+        {current && (
+          <button
+            onClick={() => onPick(null)}
+            className="w-full text-left px-3 py-1.5 text-[11px] text-zinc-500 hover:text-red-300 hover:bg-red-950/30"
+          >
+            Unassign
+          </button>
+        )}
+      </div>
+      <div className="border-t border-zinc-800 p-2">
+        {!showAdd ? (
+          <button
+            onClick={() => setShowAdd(true)}
+            className="w-full text-xs text-zinc-300 hover:text-white text-left px-1"
+          >
+            + Add contact from Email
+          </button>
+        ) : (
+          <form onSubmit={submitAdd} className="space-y-1.5">
+            <input
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Name"
+              className="w-full h-7 px-2 rounded bg-zinc-950 border border-zinc-800 text-xs focus:outline-none focus:border-zinc-600"
+            />
+            <input
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="Email address"
+              type="email"
+              className="w-full h-7 px-2 rounded bg-zinc-950 border border-zinc-800 text-xs font-mono focus:outline-none focus:border-zinc-600"
+            />
+            <div className="flex gap-1.5">
+              <button
+                type="submit"
+                className="h-7 px-2 rounded bg-zinc-100 text-zinc-950 text-[11px] font-semibold hover:bg-white"
+              >
+                Add & assign
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAdd(false)}
+                className="h-7 px-2 rounded border border-zinc-700 text-[11px] text-zinc-300 hover:bg-zinc-800"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TagBadge({ tag }: { tag: Task["tag"] }) {
   const map = {
     urgent: "bg-red-900/60 text-red-300 border-red-700/60",
@@ -80,6 +257,25 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [panel, setPanel] = useState<{ tool: string; task: Task } | null>(null);
   const [scanPlayed, setScanPlayed] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [reassigning, setReassigning] = useState<string | null>(null);
+
+  useEffect(() => {
+    setContacts(loadContacts(app.assignee));
+  }, [app.assignee]);
+
+  const addContact = (c: Contact) => {
+    setContacts((prev) => {
+      const next = prev.some((p) => p.name === c.name) ? prev : [...prev, c];
+      saveContacts(next);
+      return next;
+    });
+  };
+
+  const reassign = (id: string, name: string | null) => {
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, assignee: name } : t)));
+    setReassigning(null);
+  };
 
   // reset state on app change
   useEffect(() => {
@@ -200,6 +396,11 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 setExpanded={setExpanded}
                 toggleTask={toggleTask}
                 openTool={(tool, task) => setPanel({ tool, task })}
+                contacts={contacts}
+                reassigning={reassigning}
+                setReassigning={setReassigning}
+                onReassign={reassign}
+                onAddContact={addContact}
               />
             )}
             {tab === "automation" && (
@@ -210,7 +411,18 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 onPlayed={() => setScanPlayed(true)}
               />
             )}
-            {tab === "project" && <ProjectTab code={code} tasks={tasks} toggleTask={toggleTask} />}
+            {tab === "project" && (
+              <ProjectTab
+                code={code}
+                tasks={tasks}
+                toggleTask={toggleTask}
+                contacts={contacts}
+                reassigning={reassigning}
+                setReassigning={setReassigning}
+                onReassign={reassign}
+                onAddContact={addContact}
+              />
+            )}
             {tab === "citation" && <CitationTab initial={app.citations} />}
             {tab === "overview" && <OverviewTab app={app} />}
             {tab === "history" && <HistoryTab app={app} winnerDate={detected?.date} />}
@@ -241,6 +453,11 @@ function WorkflowTab({
   setExpanded,
   toggleTask,
   openTool,
+  contacts,
+  reassigning,
+  setReassigning,
+  onReassign,
+  onAddContact,
 }: {
   code: string;
   tasks: Task[];
@@ -249,6 +466,11 @@ function WorkflowTab({
   setExpanded: (id: string | null) => void;
   toggleTask: (id: string) => void;
   openTool: (tool: string, t: Task) => void;
+  contacts: Contact[];
+  reassigning: string | null;
+  setReassigning: (id: string | null) => void;
+  onReassign: (id: string, name: string | null) => void;
+  onAddContact: (c: Contact) => void;
 }) {
   return (
     <div>
@@ -298,14 +520,35 @@ function WorkflowTab({
                     </div>
                   </div>
                   <div className="text-xs text-zinc-400 mt-0.5">{t.description}</div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Avatar name={t.assignee} />
-                    {!t.done && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-zinc-700 text-zinc-500">
-                        + reassign
-                      </span>
-                    )}
-                  </div>
+                   <div
+                     className="mt-2 flex items-center gap-2 relative"
+                     onClick={(e) => e.stopPropagation()}
+                   >
+                     <button
+                       type="button"
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         setReassigning(reassigning === t.id ? null : t.id);
+                       }}
+                       className="inline-flex items-center gap-1.5 rounded-full hover:bg-zinc-800/60 px-1 py-0.5 transition"
+                     >
+                       <Avatar name={t.assignee} />
+                       {!t.done && (
+                         <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500">
+                           {t.assignee ? "reassign" : "+ assign"}
+                         </span>
+                       )}
+                     </button>
+                     {reassigning === t.id && (
+                       <ReassignPicker
+                         current={t.assignee}
+                         contacts={contacts}
+                         onPick={(name) => onReassign(t.id, name)}
+                         onAdd={onAddContact}
+                         onClose={() => setReassigning(null)}
+                       />
+                     )}
+                   </div>
                 </div>
               </div>
               {isExp && t.tools.length > 0 && (
@@ -515,7 +758,25 @@ function AutomationTab({
 }
 
 // --- Project Management (Kanban) ---
-function ProjectTab({ code, tasks, toggleTask }: { code: string; tasks: Task[]; toggleTask: (id: string) => void }) {
+function ProjectTab({
+  code,
+  tasks,
+  toggleTask,
+  contacts,
+  reassigning,
+  setReassigning,
+  onReassign,
+  onAddContact,
+}: {
+  code: string;
+  tasks: Task[];
+  toggleTask: (id: string) => void;
+  contacts: Contact[];
+  reassigning: string | null;
+  setReassigning: (id: string | null) => void;
+  onReassign: (id: string, name: string | null) => void;
+  onAddContact: (c: Contact) => void;
+}) {
   const incomplete = tasks.filter((t) => !t.done);
   const doneList = tasks.filter((t) => t.done);
   const inProgress = incomplete.slice(0, 1);
@@ -564,7 +825,27 @@ function ProjectTab({ code, tasks, toggleTask }: { code: string; tasks: Task[]; 
                         <TagBadge tag={t.tag} />
                       </div>
                       <div className="text-[11px] text-zinc-500 mt-1 line-clamp-2">{t.description}</div>
-                      <div className="mt-2"><Avatar name={t.assignee} /></div>
+                      <div className="mt-2 relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReassigning(reassigning === t.id ? null : t.id);
+                          }}
+                          className="inline-flex items-center rounded-full hover:bg-zinc-800/60 px-1 py-0.5 transition"
+                        >
+                          <Avatar name={t.assignee} />
+                        </button>
+                        {reassigning === t.id && (
+                          <ReassignPicker
+                            current={t.assignee}
+                            contacts={contacts}
+                            onPick={(name) => onReassign(t.id, name)}
+                            onAdd={onAddContact}
+                            onClose={() => setReassigning(null)}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
