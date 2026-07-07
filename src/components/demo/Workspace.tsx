@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { guessNameFromEmail } from "@/lib/name-from-email";
 import { notifyAssignment } from "@/lib/notify-assignment.functions";
 import { useGoogleContacts } from "@/hooks/use-google-contacts";
+import { useOrgSuggestions } from "@/hooks/use-org-suggestions";
 import { UserMenu } from "@/components/UserMenu";
 
 type Tab =
@@ -282,22 +283,31 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reassigning, setReassigning] = useState<string | null>(null);
   const { toast } = useToast();
-  const { contacts: googleContacts } = useGoogleContacts();
+  const { contacts: googleContacts, directory: googleDirectory } =
+    useGoogleContacts();
+  const { profiles: orgProfiles } = useOrgSuggestions();
 
   useEffect(() => {
     setContacts(loadContacts(app.assignee));
   }, [app.assignee]);
 
-  // Merge Google contacts (deduped by email) on top of stored/default ones.
+  // Merge all assignee sources, deduped by lowercased email. Later sources
+  // fill in gaps but never overwrite an existing entry (which is more likely
+  // to have a real display name from the user or Workspace directory).
   const mergedContacts = useMemo(() => {
     const byEmail = new Map<string, Contact>();
-    for (const c of contacts) byEmail.set(c.email.toLowerCase(), c);
-    for (const c of googleContacts) {
-      const key = c.email.toLowerCase();
-      if (!byEmail.has(key)) byEmail.set(key, c);
-    }
+    const add = (list: Contact[]) => {
+      for (const c of list) {
+        const key = c.email.toLowerCase();
+        if (!byEmail.has(key)) byEmail.set(key, c);
+      }
+    };
+    add(contacts);
+    add(googleDirectory); // coworkers from Google Workspace
+    add(orgProfiles); // coworkers who signed into this app
+    add(googleContacts); // personal Google contacts
     return Array.from(byEmail.values());
-  }, [contacts, googleContacts]);
+  }, [contacts, googleContacts, googleDirectory, orgProfiles]);
 
   const addContact = (c: Contact) => {
     setContacts((prev) => {
