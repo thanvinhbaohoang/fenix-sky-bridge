@@ -89,9 +89,12 @@ function AuthPage() {
         redirect_uri: window.location.origin + "/app",
         extraParams: {
           // Request Google Contacts (People API) read access alongside the
-          // default profile scopes so we can populate assignee suggestions.
+          // default profile scopes plus the Workspace directory so we can
+          // populate assignee suggestions with contacts and coworkers.
           scope:
-            "openid email profile https://www.googleapis.com/auth/contacts.readonly",
+            "openid email profile " +
+            "https://www.googleapis.com/auth/contacts.readonly " +
+            "https://www.googleapis.com/auth/directory.readonly",
           // Ensure Google returns a fresh access_token with the new scope
           // instead of a cached grant that omits it.
           access_type: "online",
