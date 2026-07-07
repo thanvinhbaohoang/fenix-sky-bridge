@@ -603,6 +603,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
 // --- Workflow tab ---
 function WorkflowTab({
   code,
+  app,
   tasks,
   done,
   expanded,
@@ -614,8 +615,11 @@ function WorkflowTab({
   setReassigning,
   onReassign,
   onAddContact,
+  onViewOverview,
+  onViewHistory,
 }: {
   code: string;
+  app: AppData;
   tasks: Task[];
   done: number;
   expanded: string | null;
@@ -627,6 +631,8 @@ function WorkflowTab({
   setReassigning: (id: string | null) => void;
   onReassign: (id: string, name: string | null) => void;
   onAddContact: (c: Contact) => void;
+  onViewOverview: () => void;
+  onViewHistory: () => void;
 }) {
   return (
     <div>
