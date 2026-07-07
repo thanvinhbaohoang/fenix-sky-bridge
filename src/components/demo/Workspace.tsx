@@ -257,6 +257,25 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [panel, setPanel] = useState<{ tool: string; task: Task } | null>(null);
   const [scanPlayed, setScanPlayed] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [reassigning, setReassigning] = useState<string | null>(null);
+
+  useEffect(() => {
+    setContacts(loadContacts(app.assignee));
+  }, [app.assignee]);
+
+  const addContact = (c: Contact) => {
+    setContacts((prev) => {
+      const next = prev.some((p) => p.name === c.name) ? prev : [...prev, c];
+      saveContacts(next);
+      return next;
+    });
+  };
+
+  const reassign = (id: string, name: string | null) => {
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, assignee: name } : t)));
+    setReassigning(null);
+  };
 
   // reset state on app change
   useEffect(() => {
@@ -377,6 +396,11 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 setExpanded={setExpanded}
                 toggleTask={toggleTask}
                 openTool={(tool, task) => setPanel({ tool, task })}
+                contacts={contacts}
+                reassigning={reassigning}
+                setReassigning={setReassigning}
+                onReassign={reassign}
+                onAddContact={addContact}
               />
             )}
             {tab === "automation" && (
@@ -387,7 +411,18 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 onPlayed={() => setScanPlayed(true)}
               />
             )}
-            {tab === "project" && <ProjectTab code={code} tasks={tasks} toggleTask={toggleTask} />}
+            {tab === "project" && (
+              <ProjectTab
+                code={code}
+                tasks={tasks}
+                toggleTask={toggleTask}
+                contacts={contacts}
+                reassigning={reassigning}
+                setReassigning={setReassigning}
+                onReassign={reassign}
+                onAddContact={addContact}
+              />
+            )}
             {tab === "citation" && <CitationTab initial={app.citations} />}
             {tab === "overview" && <OverviewTab app={app} />}
             {tab === "history" && <HistoryTab app={app} winnerDate={detected?.date} />}
