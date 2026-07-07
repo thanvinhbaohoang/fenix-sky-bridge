@@ -1,45 +1,59 @@
 ## Goal
-Let users sign in with Google, then use their Google Contacts as autocomplete suggestions when assigning a task.
+When the signed-in user has an organization email (e.g. `harold@fenix.ai`), suggest coworkers from that same domain in the assignee picker. Combine two sources so it works day one and gets better over time.
 
-## Scope
+## Source A — Google Workspace directory
+- Extend the Google OAuth scope with `https://www.googleapis.com/auth/directory.readonly`.
+- New client fetch inside `useGoogleContacts` (or a new `useGoogleDirectory` hook) that calls
+  `GET https://people.googleapis.com/v1/people:listDirectoryPeople?readMask=names,emailAddresses&sources=DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE&pageSize=1000`
+  and paginates via `nextPageToken`.
+- Silently no-op on `403 / 400` (personal Gmail accounts have no directory) so nothing breaks for non-Workspace users.
 
-### 1. Google sign-in (Lovable Cloud auth)
-- Enable Google as an auth provider on the backend.
-- Request extra OAuth scope: `https://www.googleapis.com/auth/contacts.readonly`.
-- Add a lightweight auth surface:
-  - `/auth` route with "Continue with Google" button.
-  - Header slot in `Workspace` showing signed-in user + Sign out, or a Sign in button.
-- Store the Google `provider_token` (returned by Supabase after OAuth) in memory/session so we can call Google APIs on behalf of the user.
+## Source B — App-internal org profiles (works for any provider)
+- New table `public.profiles`:
+  - `id uuid pk` (matches `auth.users.id`)
+  - `email text not null unique`
+  - `full_name text`
+  - `avatar_url text`
+  - `email_domain text generated always as (lower(split_part(email,'@',2))) stored`
+  - `updated_at timestamptz`
+  - RLS: `SELECT` policy allows any authenticated user to read rows where `email_domain = (select lower(split_part(u.email,'@',2)) from auth.users u where u.id = auth.uid())` — i.e. only see people in your own domain.
+  - `UPDATE / INSERT` allowed only for `auth.uid() = id`.
+  - `service_role` full access.
+  - GRANTs to `authenticated` and `service_role` per platform rules.
+- Trigger `handle_new_user` on `auth.users` insert → upsert `profiles` row from `raw_user_meta_data` (`full_name`, `avatar_url`) + `email`.
+- Trigger on `auth.users` update to keep `email` / metadata in sync.
+- New server function `listOrgProfiles` (protected via `requireSupabaseAuth`) that returns `{ name, email }[]` for the caller's domain — relies on the RLS policy above.
 
-### 2. Pull Google Contacts
-- New server function `fetchGoogleContacts` (protected via `requireSupabaseAuth`) that:
-  - Accepts the Google access token from the client.
-  - Calls `https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses&pageSize=1000`.
-  - Returns a normalized list: `{ name, email }[]` (deduped, only entries with an email).
-- Client caches the result with TanStack Query (`['google-contacts']`, staleTime 10 min).
-- Graceful fallback if the token is missing/expired: prompt user to re-sign-in with Google.
+## Wiring into the UI
+- New hook `useOrgSuggestions()` that runs `listOrgProfiles` via TanStack Query (staleTime 10 min, only when signed in).
+- Extend `useGoogleContacts` to also return `directory` contacts (or add `useGoogleDirectory`).
+- In `Workspace.tsx`, `mergedContacts` becomes the union of:
+  1. local/default contacts,
+  2. personal Google contacts (existing),
+  3. Google Workspace directory,
+  4. app profiles for the same domain.
+  Dedupe by lowercased email; prefer entries with a real display name.
+- In the `ReassignPicker` search results, group into two sections when both exist:
+  - "From your organization" (sources 3+4)
+  - "Contacts" (sources 1+2)
+  Keep the free-text add-contact flow unchanged.
 
-### 3. Assignee suggestions in Workspace
-- In the "Add task" and "Reassign" flows in `src/components/demo/Workspace.tsx`:
-  - Replace/augment the email input with a combobox (shadcn `Command` + `Popover`) showing contact suggestions filtered by typed text (matches name or email).
-  - Selecting a suggestion fills both email and name fields.
-  - Free-typed emails still work (no forced selection); `guessNameFromEmail` remains the fallback when a contact isn't matched.
+## Skipping personal-email noise
+- Detect free/consumer domains (`gmail.com`, `outlook.com`, `yahoo.com`, `hotmail.com`, `icloud.com`, `proton.me`, `pm.me`) and hide the "organization" section for those users; still show personal contacts.
 
-### 4. Existing Resend notification
-- Unchanged. It will now more often have a real name because contacts provide it.
-
-## Technical notes
-- Auth: `supabase.auth.signInWithOAuth({ provider: 'google', options: { scopes: 'openid email profile https://www.googleapis.com/auth/contacts.readonly', redirectTo: `${window.location.origin}/auth/callback` } })`. Callback route hydrates session then navigates back to app.
-- `provider_token` is only present immediately after OAuth; persist it in `sessionStorage` keyed to the user id so page reloads keep contacts working until token expiry (~1h). On 401 from People API, clear it and show a "Reconnect Google" button.
-- People API is called server-side via `createServerFn` to keep the token off third-party origins and to allow future caching.
-- No new tables needed; contacts are fetched on demand.
-- Files:
-  - new `src/routes/auth.tsx`, `src/routes/auth.callback.tsx`
-  - new `src/lib/google-contacts.functions.ts`
-  - new `src/hooks/use-google-contacts.ts`
-  - new `src/components/AssigneeCombobox.tsx`
-  - edit `src/components/demo/Workspace.tsx` to use the combobox and show auth state
+## Files
+- Migration: create `profiles`, RLS, GRANTs, trigger.
+- `src/lib/org-profiles.functions.ts` — `listOrgProfiles` server fn.
+- `src/hooks/use-org-suggestions.ts` — TanStack Query wrapper.
+- `src/hooks/use-google-contacts.ts` — add directory fetch + return typed sources.
+- `src/routes/auth.tsx` — add `directory.readonly` to requested `scope`.
+- `src/components/demo/Workspace.tsx` — merge sources, tag origin, show grouped picker.
 
 ## Out of scope
-- Writing back to Google Contacts.
-- Long-lived refresh tokens / offline access (requires storing refresh tokens server-side; can add later if you want persistent contact sync).
+- Admin/invite flows, org "spaces", cross-domain sharing.
+- Writing to Google Workspace directory.
+- Long-lived Google refresh tokens.
+
+## Notes for you
+- Google Workspace admins may need to allow the `directory.readonly` scope for third-party apps; if they don't, source A silently returns nothing and source B still works.
+- Source B only shows coworkers who have already signed into this app at least once.
