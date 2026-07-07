@@ -528,9 +528,22 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 </Badge>
               </Card>
             )}
+            {(tab === "overview" || tab === "history") && (
+              <div className="mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTab("workflow")}
+                  className="text-zinc-400 hover:text-zinc-100 -ml-2"
+                >
+                  <ChevronDown className="h-4 w-4 -rotate-90 mr-1" /> Back to workflow
+                </Button>
+              </div>
+            )}
             {tab === "workflow" && (
               <WorkflowTab
                 code={code}
+                app={app}
                 tasks={tasks}
                 done={done}
                 expanded={expanded}
@@ -542,6 +555,8 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 setReassigning={setReassigning}
                 onReassign={reassign}
                 onAddContact={addContact}
+                onViewOverview={() => setTab("overview")}
+                onViewHistory={() => setTab("history")}
               />
             )}
             {tab === "automation" && (
