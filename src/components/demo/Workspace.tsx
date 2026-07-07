@@ -923,7 +923,7 @@ function ProjectTab({
                         {reassigning === t.id && (
                           <ReassignPicker
                             current={t.assignee}
-                            contacts={mergedContacts}
+                            contacts={contacts}
                             onPick={(name) => onReassign(t.id, name)}
                             onAdd={onAddContact}
                             onClose={() => setReassigning(null)}
