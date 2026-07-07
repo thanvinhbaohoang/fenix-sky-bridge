@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { guessNameFromEmail } from "@/lib/name-from-email";
 import { notifyAssignment } from "@/lib/notify-assignment.functions";
 import { useGoogleContacts } from "@/hooks/use-google-contacts";
+import { UserMenu } from "@/components/UserMenu";
 
 type Tab =
   | "workflow"
@@ -404,6 +405,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
               <span>{EVENT_ICONS[code] ?? "●"}</span> {code}
             </span>
           )}
+          <UserMenu />
         </div>
       </header>
 
