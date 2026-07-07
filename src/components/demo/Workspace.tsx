@@ -600,6 +600,78 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   );
 }
 
+function InfoCard({ app, onClick }: { app: AppData; onClick: () => void }) {
+  return (
+    <Card
+      onClick={onClick}
+      className="group rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 hover:border-zinc-600 hover:bg-zinc-900/60 transition cursor-pointer"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 text-zinc-100">
+          <FileText className="h-4 w-4 text-zinc-400" />
+          <h3 className="text-sm font-semibold">Application info</h3>
+        </div>
+        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 transition" />
+      </div>
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500 w-20 shrink-0">Number</span>
+          <span className="font-mono text-zinc-300">{app.appNumber}</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500 w-20 shrink-0">Title</span>
+          <span className="text-zinc-300 line-clamp-1">{app.title}</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500 w-20 shrink-0">Assignee</span>
+          <span className="text-zinc-300 line-clamp-1">{app.assignee}</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500 w-20 shrink-0">Filing date</span>
+          <span className="text-zinc-300">{app.filingDate || "—"}</span>
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-1 text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition">
+        View more <ChevronRight className="h-3 w-3" />
+      </div>
+    </Card>
+  );
+}
+
+function TransactionsCard({ app, onClick }: { app: AppData; onClick: () => void }) {
+  const recent = [...app.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 4);
+  return (
+    <Card
+      onClick={onClick}
+      className="group rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 hover:border-zinc-600 hover:bg-zinc-900/60 transition cursor-pointer"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 text-zinc-100">
+          <Clock className="h-4 w-4 text-zinc-400" />
+          <h3 className="text-sm font-semibold">Recent transactions</h3>
+        </div>
+        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 transition" />
+      </div>
+      <div className="mt-3 space-y-2">
+        {recent.length === 0 ? (
+          <p className="text-xs text-zinc-500">No transactions found.</p>
+        ) : (
+          recent.map((t, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <CodeBadge code={t.code} />
+              <span className="flex-1 text-zinc-300 line-clamp-1">{t.description}</span>
+              <span className="font-mono text-zinc-500">{t.date}</span>
+            </div>
+          ))
+        )}
+      </div>
+      <div className="mt-4 flex items-center gap-1 text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition">
+        View full history <ChevronRight className="h-3 w-3" />
+      </div>
+    </Card>
+  );
+}
+
 // --- Workflow tab ---
 function WorkflowTab({
   code,
