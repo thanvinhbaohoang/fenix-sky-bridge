@@ -22,6 +22,21 @@ import { notifyAssignment } from "@/lib/notify-assignment.functions";
 import { useGoogleContacts } from "@/hooks/use-google-contacts";
 import { useOrgSuggestions } from "@/hooks/use-org-suggestions";
 import { UserMenu } from "@/components/UserMenu";
+import {
+  CheckSquare,
+  Zap,
+  ClipboardList,
+  BookOpen,
+  FileText,
+  Clock,
+  Building2,
+  User as UserIcon,
+  Wrench,
+  Search,
+  RefreshCw,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 type Tab =
   | "workflow"
@@ -31,13 +46,17 @@ type Tab =
   | "overview"
   | "history";
 
-const NAV: { id: Tab; label: string; icon: string }[] = [
-  { id: "workflow", label: "Workflow tasks", icon: "☑" },
-  { id: "automation", label: "Automation & Forms", icon: "⚡" },
-  { id: "project", label: "Project Management", icon: "📋" },
-  { id: "citation", label: "Citation Tool", icon: "📚" },
-  { id: "overview", label: "Application overview", icon: "📄" },
-  { id: "history", label: "Transaction history", icon: "🕐" },
+const NAV: {
+  id: Tab;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { id: "workflow", label: "Workflow tasks", Icon: CheckSquare },
+  { id: "automation", label: "Automation & Forms", Icon: Zap },
+  { id: "project", label: "Project Management", Icon: ClipboardList },
+  { id: "citation", label: "Citation Tool", Icon: BookOpen },
+  { id: "overview", label: "Application overview", Icon: FileText },
+  { id: "history", label: "Transaction history", Icon: Clock },
 ];
 
 function CodeBadge({ code }: { code: string }) {
@@ -419,20 +438,6 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
         </div>
       </header>
 
-      {/* Status banner */}
-      {detected && (
-        <div className={`h-10 ${c.tint} border-b ${c.border} px-4 flex items-center gap-3 text-xs shrink-0`}>
-          <span className="text-base leading-none">{EVENT_ICONS[code] ?? "●"}</span>
-          <span className={`font-semibold ${c.text}`}>{banner.msg}</span>
-          <span className="text-zinc-400">· {banner.sub}</span>
-          <span className="ml-auto">
-            <span className={`px-2 py-0.5 rounded-full border text-[11px] font-medium ${banner.chipUrgent ? "bg-red-500/20 text-red-200 border-red-500/40" : c.chip}`}>
-              {banner.chip}
-            </span>
-          </span>
-        </div>
-      )}
-
       <div className="flex-1 flex min-h-0">
         {/* Sidebar */}
         <aside className="w-[220px] shrink-0 border-r border-zinc-800 bg-zinc-950 flex flex-col">
@@ -444,25 +449,37 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
               </span>
             </div>
             <div className="mt-3 space-y-1.5 text-[11px] text-zinc-400">
-              <div>🏢 {app.assignee}</div>
-              <div>👤 {app.inventors}</div>
-              <div>🔧 Art Unit {app.artUnit}</div>
-              <div>🔍 {app.examiner}</div>
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                <span className="truncate">{app.assignee}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                <span className="truncate">{app.inventors}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Wrench className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                <span className="truncate">Art Unit {app.artUnit}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Search className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                <span className="truncate">{app.examiner}</span>
+              </div>
             </div>
           </div>
           <nav className="p-2 space-y-0.5">
-            {NAV.map((n) => (
+            {NAV.map(({ id, label, Icon }) => (
               <button
-                key={n.id}
-                onClick={() => setTab(n.id)}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-left transition border-l-2 ${
-                  tab === n.id
+                key={id}
+                onClick={() => setTab(id)}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-left transition border-l-2 ${
+                  tab === id
                     ? "bg-zinc-900 border-zinc-300 text-zinc-100"
                     : "border-transparent text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-200"
                 }`}
               >
-                <span>{n.icon}</span>
-                <span>{n.label}</span>
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span>{label}</span>
               </button>
             ))}
           </nav>
@@ -483,6 +500,31 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
         {/* Main */}
         <main className="flex-1 min-w-0 overflow-y-auto relative">
           <div className="p-6 max-w-5xl">
+            {detected && (
+              <Card
+                className={`mb-5 rounded-xl border ${c.border} ${c.tint} p-4 flex items-start gap-3`}
+              >
+                <RefreshCw className={`h-4 w-4 mt-0.5 shrink-0 ${c.text}`} />
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm font-semibold ${c.text}`}>
+                    {banner.msg}
+                  </div>
+                  <div className="text-xs text-zinc-400 mt-0.5">
+                    {banner.sub}
+                  </div>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={`rounded-full text-[11px] font-medium shrink-0 ${
+                    banner.chipUrgent
+                      ? "bg-red-500/20 text-red-200 border-red-500/40"
+                      : `${c.chip}`
+                  }`}
+                >
+                  {banner.chip}
+                </Badge>
+              </Card>
+            )}
             {tab === "workflow" && (
               <WorkflowTab
                 code={code}
