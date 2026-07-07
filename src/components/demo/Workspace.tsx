@@ -37,6 +37,10 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 
 type Tab =
   | "workflow"
@@ -625,89 +629,127 @@ function WorkflowTab({
         />
       </div>
       <div className="mt-4 space-y-2">
-        {tasks.map((t) => {
+        {tasks.map((t, i) => {
           const isExp = expanded === t.id;
           return (
-            <div
+            <motion.div
               key={t.id}
-              className={`rounded-lg border bg-zinc-900/50 transition ${
-                isExp ? "border-l-2 border-l-blue-500 border-zinc-800" : "border-zinc-800"
-              } ${t.done ? "opacity-60" : ""}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.35,
+                delay: i * 0.06,
+                ease: [0.22, 1, 0.36, 1],
+              }}
             >
-              <div
-                className="p-3 flex gap-3 items-start cursor-pointer"
-                onClick={() => setExpanded(isExp ? null : t.id)}
+              <Card
+                className={`rounded-xl border bg-zinc-900/50 transition-colors ${
+                  isExp
+                    ? "border-blue-500 ring-1 ring-blue-500/40"
+                    : "border-zinc-800"
+                } ${t.done ? "opacity-60" : ""}`}
               >
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleTask(t.id);
-                  }}
-                  className={`mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0 transition ${
-                    t.done ? "bg-teal-500 border-teal-500 text-white" : "border-zinc-600 hover:border-zinc-400"
-                  }`}
+                <div
+                  className="p-3 flex gap-3 items-start cursor-pointer"
+                  onClick={() => setExpanded(isExp ? null : t.id)}
                 >
-                  {t.done && <span className="text-[9px]">✓</span>}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className={`text-sm font-medium ${t.done ? "line-through text-zinc-500" : ""}`}>{t.title}</div>
-                    <div className="flex items-center gap-2">
-                      <TagBadge tag={t.tag} />
-                      <span className="text-zinc-500 text-xs">{isExp ? "▴" : "▾"}</span>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-0.5 shrink-0"
+                  >
+                    <Checkbox
+                      checked={t.done}
+                      onCheckedChange={() => toggleTask(t.id)}
+                      className="rounded-full h-4 w-4"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div
+                        className={`text-sm font-medium ${
+                          t.done ? "line-through text-zinc-500" : ""
+                        }`}
+                      >
+                        {t.title}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <TagBadge tag={t.tag} />
+                        <motion.span
+                          animate={{ rotate: isExp ? 180 : 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="text-zinc-500 inline-flex"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </motion.span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-zinc-400 mt-0.5">
+                      {t.description}
+                    </div>
+                    <div
+                      className="mt-2 flex items-center gap-2 relative"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setReassigning(reassigning === t.id ? null : t.id);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full hover:bg-zinc-800/60 px-1 py-0.5 transition"
+                      >
+                        <Avatar name={t.assignee} />
+                        {!t.done && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500">
+                            {t.assignee ? "reassign" : "+ assign"}
+                          </span>
+                        )}
+                      </button>
+                      {reassigning === t.id && (
+                        <ReassignPicker
+                          current={t.assignee}
+                          contacts={contacts}
+                          onPick={(name) => onReassign(t.id, name)}
+                          onAdd={onAddContact}
+                          onClose={() => setReassigning(null)}
+                        />
+                      )}
                     </div>
                   </div>
-                  <div className="text-xs text-zinc-400 mt-0.5">{t.description}</div>
-                   <div
-                     className="mt-2 flex items-center gap-2 relative"
-                     onClick={(e) => e.stopPropagation()}
-                   >
-                     <button
-                       type="button"
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         setReassigning(reassigning === t.id ? null : t.id);
-                       }}
-                       className="inline-flex items-center gap-1.5 rounded-full hover:bg-zinc-800/60 px-1 py-0.5 transition"
-                     >
-                       <Avatar name={t.assignee} />
-                       {!t.done && (
-                         <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500">
-                           {t.assignee ? "reassign" : "+ assign"}
-                         </span>
-                       )}
-                     </button>
-                     {reassigning === t.id && (
-                       <ReassignPicker
-                         current={t.assignee}
-                          contacts={contacts}
-                         onPick={(name) => onReassign(t.id, name)}
-                         onAdd={onAddContact}
-                         onClose={() => setReassigning(null)}
-                       />
-                     )}
-                   </div>
                 </div>
-              </div>
-              {isExp && t.tools.length > 0 && (
-                <div className="px-3 pb-3 pt-1 border-t border-zinc-800 mt-1">
-                  <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">
-                    Tools for this step
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {t.tools.map((tool) => (
-                      <button
-                        key={tool}
-                        onClick={() => openTool(tool, t)}
-                        className="text-xs px-2 py-1 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-600 transition"
-                      >
-                        {tool}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+                <AnimatePresence initial={false}>
+                  {isExp && t.tools.length > 0 && (
+                    <motion.div
+                      key="tools"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-3 pb-3 pt-2 border-t border-zinc-800">
+                        <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">
+                          Tools for this step
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {t.tools.map((tool) => (
+                            <Button
+                              key={tool}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openTool(tool, t)}
+                              className="h-7 rounded-md border-zinc-700 bg-zinc-900 text-xs hover:bg-zinc-800 hover:border-zinc-600"
+                            >
+                              {tool}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Card>
+            </motion.div>
           );
         })}
       </div>
