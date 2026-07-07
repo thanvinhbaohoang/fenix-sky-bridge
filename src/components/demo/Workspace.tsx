@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { guessNameFromEmail } from "@/lib/name-from-email";
 import { notifyAssignment } from "@/lib/notify-assignment.functions";
+import { useGoogleContacts } from "@/hooks/use-google-contacts";
 
 type Tab =
   | "workflow"
@@ -280,10 +281,26 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reassigning, setReassigning] = useState<string | null>(null);
   const { toast } = useToast();
+  const {
+    contacts: googleContacts,
+    isLoading: googleLoading,
+    hasToken: googleConnected,
+  } = useGoogleContacts();
 
   useEffect(() => {
     setContacts(loadContacts(app.assignee));
   }, [app.assignee]);
+
+  // Merge Google contacts (deduped by email) on top of stored/default ones.
+  const mergedContacts = useMemo(() => {
+    const byEmail = new Map<string, Contact>();
+    for (const c of contacts) byEmail.set(c.email.toLowerCase(), c);
+    for (const c of googleContacts) {
+      const key = c.email.toLowerCase();
+      if (!byEmail.has(key)) byEmail.set(key, c);
+    }
+    return Array.from(byEmail.values());
+  }, [contacts, googleContacts]);
 
   const addContact = (c: Contact) => {
     setContacts((prev) => {
@@ -298,7 +315,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
     setReassigning(null);
     if (!name) return;
     const task = tasks.find((t) => t.id === id);
-    const contact = contacts.find((c) => c.name === name);
+    const contact = mergedContacts.find((c) => c.name === name);
     if (!task || !contact) return;
     const eventPayload = detected
       ? {
