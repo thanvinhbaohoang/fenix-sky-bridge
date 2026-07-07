@@ -520,14 +520,35 @@ function WorkflowTab({
                     </div>
                   </div>
                   <div className="text-xs text-zinc-400 mt-0.5">{t.description}</div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Avatar name={t.assignee} />
-                    {!t.done && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-zinc-700 text-zinc-500">
-                        + reassign
-                      </span>
-                    )}
-                  </div>
+                   <div
+                     className="mt-2 flex items-center gap-2 relative"
+                     onClick={(e) => e.stopPropagation()}
+                   >
+                     <button
+                       type="button"
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         setReassigning(reassigning === t.id ? null : t.id);
+                       }}
+                       className="inline-flex items-center gap-1.5 rounded-full hover:bg-zinc-800/60 px-1 py-0.5 transition"
+                     >
+                       <Avatar name={t.assignee} />
+                       {!t.done && (
+                         <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-dashed border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500">
+                           {t.assignee ? "reassign" : "+ assign"}
+                         </span>
+                       )}
+                     </button>
+                     {reassigning === t.id && (
+                       <ReassignPicker
+                         current={t.assignee}
+                         contacts={contacts}
+                         onPick={(name) => onReassign(t.id, name)}
+                         onAdd={onAddContact}
+                         onClose={() => setReassigning(null)}
+                       />
+                     )}
+                   </div>
                 </div>
               </div>
               {isExp && t.tools.length > 0 && (
