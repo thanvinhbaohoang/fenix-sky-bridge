@@ -643,7 +643,7 @@ function WorkflowTab({
               }}
             >
               <Card
-                className={`rounded-xl border bg-zinc-900/50 transition-colors ${
+                className={`rounded-xl border bg-zinc-900/50 text-zinc-100 transition-colors ${
                   isExp
                     ? "border-blue-500 ring-1 ring-blue-500/40"
                     : "border-zinc-800"
@@ -653,16 +653,21 @@ function WorkflowTab({
                   className="p-3 flex gap-3 items-start cursor-pointer"
                   onClick={() => setExpanded(isExp ? null : t.id)}
                 >
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="mt-0.5 shrink-0"
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTask(t.id);
+                    }}
+                    className={`mt-0.5 h-4 w-4 rounded-full border flex items-center justify-center shrink-0 transition ${
+                      t.done
+                        ? "bg-teal-500 border-teal-500 text-white"
+                        : "border-zinc-600 hover:border-zinc-400 bg-transparent"
+                    }`}
+                    aria-pressed={t.done}
                   >
-                    <Checkbox
-                      checked={t.done}
-                      onCheckedChange={() => toggleTask(t.id)}
-                      className="rounded-full h-4 w-4"
-                    />
-                  </div>
+                    {t.done && <span className="text-[9px] leading-none">✓</span>}
+                  </button>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <div
