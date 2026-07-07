@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { clearGoogleToken, setGoogleToken } from "@/lib/google-token";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -29,11 +30,18 @@ function AppLayout() {
       (_event, session) => {
         setUser(session?.user ?? null);
         setLoading(false);
+        const t = (session as unknown as { provider_token?: string })
+          ?.provider_token;
+        if (t) setGoogleToken(t);
+        if (_event === "SIGNED_OUT") clearGoogleToken();
       },
     );
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      const t = (session as unknown as { provider_token?: string })
+        ?.provider_token;
+      if (t) setGoogleToken(t);
     });
     return () => subscription.unsubscribe();
   }, []);
