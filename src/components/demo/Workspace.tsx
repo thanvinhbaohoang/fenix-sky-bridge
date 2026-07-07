@@ -281,11 +281,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reassigning, setReassigning] = useState<string | null>(null);
   const { toast } = useToast();
-  const {
-    contacts: googleContacts,
-    isLoading: googleLoading,
-    hasToken: googleConnected,
-  } = useGoogleContacts();
+  const { contacts: googleContacts } = useGoogleContacts();
 
   useEffect(() => {
     setContacts(loadContacts(app.assignee));
