@@ -453,6 +453,11 @@ function WorkflowTab({
   setExpanded,
   toggleTask,
   openTool,
+  contacts,
+  reassigning,
+  setReassigning,
+  onReassign,
+  onAddContact,
 }: {
   code: string;
   tasks: Task[];
@@ -461,6 +466,11 @@ function WorkflowTab({
   setExpanded: (id: string | null) => void;
   toggleTask: (id: string) => void;
   openTool: (tool: string, t: Task) => void;
+  contacts: Contact[];
+  reassigning: string | null;
+  setReassigning: (id: string | null) => void;
+  onReassign: (id: string, name: string | null) => void;
+  onAddContact: (c: Contact) => void;
 }) {
   return (
     <div>
