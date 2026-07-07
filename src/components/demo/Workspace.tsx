@@ -737,7 +737,25 @@ function AutomationTab({
 }
 
 // --- Project Management (Kanban) ---
-function ProjectTab({ code, tasks, toggleTask }: { code: string; tasks: Task[]; toggleTask: (id: string) => void }) {
+function ProjectTab({
+  code,
+  tasks,
+  toggleTask,
+  contacts,
+  reassigning,
+  setReassigning,
+  onReassign,
+  onAddContact,
+}: {
+  code: string;
+  tasks: Task[];
+  toggleTask: (id: string) => void;
+  contacts: Contact[];
+  reassigning: string | null;
+  setReassigning: (id: string | null) => void;
+  onReassign: (id: string, name: string | null) => void;
+  onAddContact: (c: Contact) => void;
+}) {
   const incomplete = tasks.filter((t) => !t.done);
   const doneList = tasks.filter((t) => t.done);
   const inProgress = incomplete.slice(0, 1);
