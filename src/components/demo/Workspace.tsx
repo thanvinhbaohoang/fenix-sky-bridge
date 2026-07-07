@@ -16,6 +16,9 @@ import {
   statusBanner,
   Citation,
 } from "./data";
+import { useToast } from "@/hooks/use-toast";
+import { guessNameFromEmail } from "@/lib/name-from-email";
+import { notifyAssignment } from "@/lib/notify-assignment.functions";
 
 type Tab =
   | "workflow"
@@ -103,8 +106,9 @@ function ReassignPicker({
 }) {
   const [q, setQ] = useState("");
   const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [newName, setNewName] = useState("");
+  const [nameTouched, setNameTouched] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -130,11 +134,17 @@ function ReassignPicker({
 
   const submitAdd = (e: FormEvent) => {
     e.preventDefault();
-    const name = newName.trim();
     const email = newEmail.trim();
-    if (!name || !email) return;
+    if (!email) return;
+    const name = (newName.trim() || guessNameFromEmail(email)).trim();
+    if (!name) return;
     onAdd({ name, email });
     onPick(name);
+  };
+
+  const handleEmailChange = (v: string) => {
+    setNewEmail(v);
+    if (!nameTouched) setNewName(guessNameFromEmail(v));
   };
 
   return (
@@ -198,18 +208,28 @@ function ReassignPicker({
           <form onSubmit={submitAdd} className="space-y-1.5">
             <input
               autoFocus
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Name"
-              className="w-full h-7 px-2 rounded bg-zinc-950 border border-zinc-800 text-xs focus:outline-none focus:border-zinc-600"
-            />
-            <input
               value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
               placeholder="Email address"
               type="email"
               className="w-full h-7 px-2 rounded bg-zinc-950 border border-zinc-800 text-xs font-mono focus:outline-none focus:border-zinc-600"
             />
+            {newEmail.includes("@") && (
+              <div>
+                <div className="text-[10px] text-zinc-500 mb-0.5">
+                  Suggested name (editable)
+                </div>
+                <input
+                  value={newName}
+                  onChange={(e) => {
+                    setNewName(e.target.value);
+                    setNameTouched(true);
+                  }}
+                  placeholder="Name"
+                  className="w-full h-7 px-2 rounded bg-zinc-950 border border-zinc-800 text-xs focus:outline-none focus:border-zinc-600"
+                />
+              </div>
+            )}
             <div className="flex gap-1.5">
               <button
                 type="submit"
@@ -259,6 +279,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const [scanPlayed, setScanPlayed] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reassigning, setReassigning] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     setContacts(loadContacts(app.assignee));
@@ -275,6 +296,56 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const reassign = (id: string, name: string | null) => {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, assignee: name } : t)));
     setReassigning(null);
+    if (!name) return;
+    const task = tasks.find((t) => t.id === id);
+    const contact = contacts.find((c) => c.name === name);
+    if (!task || !contact) return;
+    const eventPayload = detected
+      ? {
+          code: detected.code,
+          label: EVENT_LABELS[detected.code] ?? detected.code,
+          date: detected.date,
+        }
+      : null;
+    toast({
+      title: `Notifying ${name}…`,
+      description: contact.email,
+    });
+    notifyAssignment({
+      data: {
+        to: contact.email,
+        toName: contact.name,
+        origin:
+          typeof window !== "undefined"
+            ? window.location.origin
+            : "https://fenixai.app",
+        task: {
+          title: task.title,
+          description: task.description,
+          tag: task.tag,
+          tools: task.tools,
+        },
+        app: {
+          appNumber: app.appNumber,
+          title: app.title,
+          assignee: app.assignee,
+        },
+        event: eventPayload,
+      },
+    })
+      .then((r) =>
+        toast({
+          title: "Email sent",
+          description: `Notified ${name} at ${contact.email}`,
+        }),
+      )
+      .catch((err: Error) =>
+        toast({
+          title: "Email failed",
+          description: err.message,
+          variant: "destructive",
+        }),
+      );
   };
 
   // reset state on app change
