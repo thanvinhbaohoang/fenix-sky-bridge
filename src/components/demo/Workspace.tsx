@@ -484,7 +484,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 setExpanded={setExpanded}
                 toggleTask={toggleTask}
                 openTool={(tool, task) => setPanel({ tool, task })}
-                contacts={contacts}
+                contacts={mergedContacts}
                 reassigning={reassigning}
                 setReassigning={setReassigning}
                 onReassign={reassign}
@@ -504,7 +504,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 code={code}
                 tasks={tasks}
                 toggleTask={toggleTask}
-                contacts={contacts}
+                contacts={mergedContacts}
                 reassigning={reassigning}
                 setReassigning={setReassigning}
                 onReassign={reassign}
@@ -630,7 +630,7 @@ function WorkflowTab({
                      {reassigning === t.id && (
                        <ReassignPicker
                          current={t.assignee}
-                         contacts={contacts}
+                         contacts={mergedContacts}
                          onPick={(name) => onReassign(t.id, name)}
                          onAdd={onAddContact}
                          onClose={() => setReassigning(null)}
@@ -927,7 +927,7 @@ function ProjectTab({
                         {reassigning === t.id && (
                           <ReassignPicker
                             current={t.assignee}
-                            contacts={contacts}
+                            contacts={mergedContacts}
                             onPick={(name) => onReassign(t.id, name)}
                             onAdd={onAddContact}
                             onClose={() => setReassigning(null)}
