@@ -60,8 +60,6 @@ const NAV: {
   { id: "automation", label: "Automation & Forms", Icon: Zap },
   { id: "project", label: "Project Management", Icon: ClipboardList },
   { id: "citation", label: "Citation Tool", Icon: BookOpen },
-  { id: "overview", label: "Application overview", Icon: FileText },
-  { id: "history", label: "Transaction history", Icon: Clock },
 ];
 
 function CodeBadge({ code }: { code: string }) {
