@@ -825,7 +825,27 @@ function ProjectTab({
                         <TagBadge tag={t.tag} />
                       </div>
                       <div className="text-[11px] text-zinc-500 mt-1 line-clamp-2">{t.description}</div>
-                      <div className="mt-2"><Avatar name={t.assignee} /></div>
+                      <div className="mt-2 relative" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReassigning(reassigning === t.id ? null : t.id);
+                          }}
+                          className="inline-flex items-center rounded-full hover:bg-zinc-800/60 px-1 py-0.5 transition"
+                        >
+                          <Avatar name={t.assignee} />
+                        </button>
+                        {reassigning === t.id && (
+                          <ReassignPicker
+                            current={t.assignee}
+                            contacts={contacts}
+                            onPick={(name) => onReassign(t.id, name)}
+                            onAdd={onAddContact}
+                            onClose={() => setReassigning(null)}
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
