@@ -13,31 +13,66 @@ type Person = {
   emailAddresses?: { value?: string }[];
 };
 
-async function fetchPeople(token: string): Promise<Contact[]> {
+function personToContact(p: Person): Contact | null {
+  const email = p.emailAddresses?.[0]?.value?.trim();
+  if (!email) return null;
+  const name = p.names?.[0]?.displayName?.trim() || email.split("@")[0];
+  return { name, email };
+}
+
+async function fetchConnections(token: string): Promise<Contact[]> {
   const url =
     "https://people.googleapis.com/v1/people/me/connections" +
     "?personFields=names,emailAddresses&pageSize=1000&sortOrder=FIRST_NAME_ASCENDING";
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (res.status === 401 || res.status === 403) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (res.status === 401) {
     clearGoogleToken();
     throw new Error("google-auth-required");
   }
-  if (!res.ok) throw new Error(`People API ${res.status}`);
+  if (!res.ok) return [];
   const data = (await res.json()) as { connections?: Person[] };
+  return dedupe((data.connections ?? []).map(personToContact));
+}
+
+// Lists people in the signed-in user's Google Workspace directory.
+// Returns [] silently for personal Gmail (no directory) or missing scope.
+async function fetchDirectory(token: string): Promise<Contact[]> {
   const out: Contact[] = [];
-  const seen = new Set<string>();
-  for (const p of data.connections ?? []) {
-    const email = p.emailAddresses?.[0]?.value?.trim();
-    if (!email) continue;
-    const key = email.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    const name = p.names?.[0]?.displayName?.trim() || email.split("@")[0];
-    out.push({ name, email });
+  let pageToken: string | undefined;
+  for (let i = 0; i < 10; i++) {
+    const params = new URLSearchParams({
+      readMask: "names,emailAddresses",
+      "sources": "DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE",
+      pageSize: "1000",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
+    const res = await fetch(
+      `https://people.googleapis.com/v1/people:listDirectoryPeople?${params}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) break; // 400/403 for non-Workspace accounts — silent no-op.
+    const data = (await res.json()) as {
+      people?: Person[];
+      nextPageToken?: string;
+    };
+    for (const p of data.people ?? []) {
+      const c = personToContact(p);
+      if (c) out.push(c);
+    }
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
   }
-  return out;
+  return dedupe(out);
+}
+
+function dedupe(list: (Contact | null)[]): Contact[] {
+  const map = new Map<string, Contact>();
+  for (const c of list) {
+    if (!c) continue;
+    const key = c.email.toLowerCase();
+    if (!map.has(key)) map.set(key, c);
+  }
+  return Array.from(map.values());
 }
 
 /**
@@ -73,11 +108,18 @@ export function useGoogleContacts() {
     queryKey: ["google-contacts", token ? token.slice(0, 8) : "none"],
     enabled: !!token,
     staleTime: 10 * 60 * 1000,
-    queryFn: () => fetchPeople(token!),
+    queryFn: async () => {
+      const [connections, directory] = await Promise.all([
+        fetchConnections(token!),
+        fetchDirectory(token!),
+      ]);
+      return { connections, directory };
+    },
   });
 
   return {
-    contacts: query.data ?? [],
+    contacts: query.data?.connections ?? [],
+    directory: query.data?.directory ?? [],
     isLoading: !!token && query.isLoading,
     error: query.error as Error | null,
     hasToken: !!token,
