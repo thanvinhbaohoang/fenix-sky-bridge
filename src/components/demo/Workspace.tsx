@@ -16,6 +16,9 @@ import {
   statusBanner,
   Citation,
 } from "./data";
+import { useToast } from "@/hooks/use-toast";
+import { guessNameFromEmail } from "@/lib/name-from-email";
+import { notifyAssignment } from "@/lib/notify-assignment.functions";
 
 type Tab =
   | "workflow"
@@ -259,6 +262,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const [scanPlayed, setScanPlayed] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reassigning, setReassigning] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     setContacts(loadContacts(app.assignee));
@@ -275,6 +279,56 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   const reassign = (id: string, name: string | null) => {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, assignee: name } : t)));
     setReassigning(null);
+    if (!name) return;
+    const task = tasks.find((t) => t.id === id);
+    const contact = contacts.find((c) => c.name === name);
+    if (!task || !contact) return;
+    const eventPayload = detected
+      ? {
+          code: detected.code,
+          label: EVENT_LABELS[detected.code] ?? detected.code,
+          date: detected.date,
+        }
+      : null;
+    toast({
+      title: `Notifying ${name}…`,
+      description: contact.email,
+    });
+    notifyAssignment({
+      data: {
+        to: contact.email,
+        toName: contact.name,
+        origin:
+          typeof window !== "undefined"
+            ? window.location.origin
+            : "https://fenixai.app",
+        task: {
+          title: task.title,
+          description: task.description,
+          tag: task.tag,
+          tools: task.tools,
+        },
+        app: {
+          appNumber: app.appNumber,
+          title: app.title,
+          assignee: app.assignee,
+        },
+        event: eventPayload,
+      },
+    })
+      .then((r) =>
+        toast({
+          title: "Email sent",
+          description: `Notified ${name} at ${contact.email}`,
+        }),
+      )
+      .catch((err: Error) =>
+        toast({
+          title: "Email failed",
+          description: err.message,
+          variant: "destructive",
+        }),
+      );
   };
 
   // reset state on app change
