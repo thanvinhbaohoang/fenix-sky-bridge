@@ -4,6 +4,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { setGoogleToken } from "@/lib/google-token";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -86,11 +87,27 @@ function AuthPage() {
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin + "/app",
+        extraParams: {
+          // Request Google Contacts (People API) read access alongside the
+          // default profile scopes so we can populate assignee suggestions.
+          scope:
+            "openid email profile https://www.googleapis.com/auth/contacts.readonly",
+          // Ensure Google returns a fresh access_token with the new scope
+          // instead of a cached grant that omits it.
+          access_type: "online",
+          prompt: "consent",
+        },
       });
       if (result.error) {
         toast.error("Sign-in failed");
         return;
       }
+      // If the flow completed inline (no redirect), capture the provider token.
+      const anyResult = result as unknown as {
+        tokens?: { provider_token?: string };
+      };
+      const providerToken = anyResult.tokens?.provider_token;
+      if (providerToken) setGoogleToken(providerToken);
     } finally {
       setIsLoading(false);
     }
