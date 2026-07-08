@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Workspace } from "@/components/demo/Workspace";
 import {
   fetchUsptoApplication,
+  fetchUsptoDocuments,
   fetchUsptoTransactions,
 } from "@/lib/uspto.functions";
 import { toAppData } from "@/lib/uspto-mapping";
@@ -58,6 +59,15 @@ function ProjectPage() {
     staleTime: 5 * 60_000,
   });
 
+  const docsQuery = useQuery({
+    queryKey: ["uspto-docs", cleanApp],
+    queryFn: () =>
+      fetchUsptoDocuments({ data: { applicationNumber: cleanApp } }),
+    enabled: !!cleanApp,
+    staleTime: 5 * 60_000,
+    retry: 1,
+  });
+
   const goToApp = (nextApp: string) => {
     navigate({
       search: (prev: { app?: string; template?: string }) => ({
@@ -94,6 +104,7 @@ function ProjectPage() {
     txQuery.data,
     rawApp,
     template,
+    docsQuery.data,
   );
 
   return <Workspace app={appData} onChangeApp={() => goToApp("")} />;
