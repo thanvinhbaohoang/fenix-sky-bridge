@@ -532,14 +532,21 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                   </div>
                   <ChevronRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-300 transition" />
                 </div>
-                <div className="mt-2.5 space-y-1.5">
-                  {app.transactions.slice(0, 4).map((t, i) => (
-                    <div key={i} className="flex items-center gap-2 text-[11px]">
-                      <CodeBadge code={t.code} />
-                      <div className="flex-1 truncate text-zinc-400">{t.description}</div>
-                      <div className="font-mono text-zinc-500">{t.date.slice(2)}</div>
-                    </div>
-                  ))}
+                <div className="mt-2.5 space-y-2">
+                  {app.transactions.slice(0, 4).map((t, i) => {
+                    const c = eventColor(t.code);
+                    return (
+                      <div key={i} className="flex items-start gap-2.5 text-[11px]">
+                        <span className={`mt-0.5 inline-flex items-center justify-center w-10 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${c.bg} ${c.text} ${c.border}`}>
+                          {t.code}
+                        </span>
+                        <div className="flex-1 min-w-0 leading-tight">
+                          <div className="text-zinc-300 truncate">{t.description}</div>
+                          <div className="text-zinc-500 font-mono mt-0.5">{t.date}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
                   {app.transactions.length === 0 && (
                     <p className="text-[11px] text-zinc-500">No transactions found.</p>
                   )}
