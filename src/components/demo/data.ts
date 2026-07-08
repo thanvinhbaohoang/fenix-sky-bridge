@@ -1,4 +1,14 @@
 export type Transaction = { code: string; description: string; date: string };
+export type UsptoDocument = {
+  documentIdentifier: string;
+  documentCode: string;
+  description: string;
+  officialDate: string;
+  direction: string;
+  pageCount: number;
+  downloadUrl?: string;
+  mimeType?: string;
+};
 export type Citation = {
   reference: string;
   type: "US Patent" | "US Pub." | "Foreign" | "NPL";
@@ -19,6 +29,8 @@ export type AppData = {
   filingDate: string;
   transactions: Transaction[];
   citations: Citation[];
+  documents?: UsptoDocument[];
+  meta?: Record<string, string | number | undefined | null>;
 };
 
 export const DOCKETABLE = [
