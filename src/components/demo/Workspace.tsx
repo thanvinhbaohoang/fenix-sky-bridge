@@ -421,192 +421,232 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
-      {/* Topbar */}
-      <header className="h-14 border-b border-zinc-800 bg-zinc-950 flex items-center px-4 gap-4 shrink-0">
-        <button onClick={onChangeApp} className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-zinc-100 text-zinc-950 flex items-center justify-center font-bold">F</div>
-          <span className="font-semibold tracking-tight">FenixAI</span>
-          <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">Demo</span>
-        </button>
-        <div className="flex-1 flex items-center gap-2 max-w-2xl mx-auto">
-          <button
-            onClick={onChangeApp}
-            className="flex-1 text-left font-mono text-xs px-3 h-9 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-700 transition"
-          >
-            {app.appNumber}
+    <SidebarProvider>
+      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+        {/* Topbar */}
+        <header className="h-14 border-b border-zinc-800 bg-zinc-950 flex items-center px-4 gap-4 shrink-0">
+          <button onClick={onChangeApp} className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-lg bg-zinc-100 text-zinc-950 flex items-center justify-center font-bold">F</div>
+            <span className="font-semibold tracking-tight">FenixAI</span>
+            <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">Demo</span>
           </button>
-          <button onClick={onChangeApp} className="h-9 px-3 rounded-md bg-zinc-100 text-zinc-950 text-xs font-semibold hover:bg-white">
-            Change application
-          </button>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-zinc-500">{app.matter}</span>
-          {detected && (
-            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-semibold border ${c.bg} ${c.text} ${c.border}`}>
-              <span>{EVENT_ICONS[code] ?? "●"}</span> {code}
-            </span>
-          )}
-          <UserMenu />
-        </div>
-      </header>
-
-      <div className="flex-1 flex min-h-0">
-        {/* Sidebar */}
-        <aside className="w-[220px] shrink-0 border-r border-zinc-800 bg-zinc-950 flex flex-col">
-          <div className="p-3 border-b border-zinc-800">
-            <div className="text-xs font-semibold leading-snug line-clamp-2">{app.title}</div>
-            <div className="mt-2">
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${c.bg} ${c.text} ${c.border}`}>
-                {EVENT_ICONS[code] ?? "●"} {code}
-              </span>
-            </div>
-            <div className="mt-3 space-y-1.5 text-[11px] text-zinc-400">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-                <span className="truncate">{app.assignee}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <UserIcon className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-                <span className="truncate">{app.inventors}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Wrench className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-                <span className="truncate">Art Unit {app.artUnit}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
-                <span className="truncate">{app.examiner}</span>
-              </div>
-            </div>
+          <div className="flex-1 flex items-center gap-2 max-w-2xl mx-auto">
+            <button
+              onClick={onChangeApp}
+              className="flex-1 text-left font-mono text-xs px-3 h-9 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-700 transition"
+            >
+              {app.appNumber}
+            </button>
+            <button onClick={onChangeApp} className="h-9 px-3 rounded-md bg-zinc-100 text-zinc-950 text-xs font-semibold hover:bg-white">
+              Change application
+            </button>
           </div>
-          <nav className="p-2 space-y-0.5">
-            {NAV.map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                onClick={() => setTab(id)}
-                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-left transition border-l-2 ${
-                  tab === id
-                    ? "bg-zinc-900 border-zinc-300 text-zinc-100"
-                    : "border-transparent text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-200"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span>{label}</span>
-              </button>
-            ))}
-          </nav>
-          <div className="mt-auto p-3 border-t border-zinc-800">
-            <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">Recent transactions</div>
-            <div className="space-y-1.5">
-              {app.transactions.slice(0, 5).map((t, i) => (
-                <div key={i} className="flex items-center gap-2 text-[11px]">
-                  <CodeBadge code={t.code} />
-                  <div className="flex-1 truncate text-zinc-400">{t.description}</div>
-                  <div className="font-mono text-zinc-500">{t.date.slice(2)}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        {/* Main */}
-        <main className="flex-1 min-w-0 overflow-y-auto relative">
-          <div className="p-6 max-w-5xl">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs text-zinc-500">{app.matter}</span>
             {detected && (
+              <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-semibold border ${c.bg} ${c.text} ${c.border}`}>
+                <span>{EVENT_ICONS[code] ?? "●"}</span> {code}
+              </span>
+            )}
+            <UserMenu />
+          </div>
+        </header>
+
+        <div className="flex-1 flex min-h-0">
+          {/* Sidebar */}
+          <Sidebar collapsible="none" className="w-[260px] shrink-0 border-r border-zinc-800 bg-zinc-950 text-zinc-100">
+            <SidebarHeader className="p-3 border-b border-zinc-800">
               <Card
-                className={`mb-5 rounded-xl border ${c.border} ${c.tint} p-4 flex items-start gap-3`}
+                onClick={() => setTab("overview")}
+                className="group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 hover:border-zinc-600 hover:bg-zinc-900/60 transition"
               >
-                <RefreshCw className={`h-4 w-4 mt-0.5 shrink-0 ${c.text}`} />
-                <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-semibold ${c.text}`}>
-                    {banner.msg}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 text-zinc-100">
+                    <FileText className="h-4 w-4 text-zinc-400" />
+                    <h3 className="text-xs font-semibold">Application info</h3>
                   </div>
-                  <div className="text-xs text-zinc-400 mt-0.5">
-                    {banner.sub}
+                  <ChevronRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-300 transition" />
+                </div>
+                <div className="mt-2.5 space-y-1.5">
+                  <div className="text-xs font-semibold leading-snug line-clamp-2">{app.title}</div>
+                  <div>
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${c.bg} ${c.text} ${c.border}`}>
+                      {EVENT_ICONS[code] ?? "●"} {code}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-[11px] text-zinc-400">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                      <span className="truncate">{app.assignee}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <UserIcon className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                      <span className="truncate">{app.inventors}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Wrench className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                      <span className="truncate">Art Unit {app.artUnit}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Search className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                      <span className="truncate">{app.examiner}</span>
+                    </div>
                   </div>
                 </div>
-                <Badge
-                  variant="outline"
-                  className={`rounded-full text-[11px] font-medium shrink-0 ${
-                    banner.chipUrgent
-                      ? "bg-red-500/20 text-red-200 border-red-500/40"
-                      : `${c.chip}`
-                  }`}
-                >
-                  {banner.chip}
-                </Badge>
+                <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition">
+                  View more <ChevronRight className="h-3 w-3" />
+                </div>
               </Card>
-            )}
-            {(tab === "overview" || tab === "history") && (
-              <div className="mb-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setTab("workflow")}
-                  className="text-zinc-400 hover:text-zinc-100 -ml-2"
-                >
-                  <ChevronDown className="h-4 w-4 -rotate-90 mr-1" /> Back to workflow
-                </Button>
-              </div>
-            )}
-            {tab === "workflow" && (
-              <WorkflowTab
-                code={code}
-                app={app}
-                tasks={tasks}
-                done={done}
-                expanded={expanded}
-                setExpanded={setExpanded}
-                toggleTask={toggleTask}
-                openTool={(tool, task) => setPanel({ tool, task })}
-                contacts={mergedContacts}
-                reassigning={reassigning}
-                setReassigning={setReassigning}
-                onReassign={reassign}
-                onAddContact={addContact}
-                onViewOverview={() => setTab("overview")}
-                onViewHistory={() => setTab("history")}
-              />
-            )}
-            {tab === "automation" && (
-              <AutomationTab
-                app={app}
-                code={code}
-                played={scanPlayed}
-                onPlayed={() => setScanPlayed(true)}
-              />
-            )}
-            {tab === "project" && (
-              <ProjectTab
-                code={code}
-                tasks={tasks}
-                toggleTask={toggleTask}
-                contacts={mergedContacts}
-                reassigning={reassigning}
-                setReassigning={setReassigning}
-                onReassign={reassign}
-                onAddContact={addContact}
-              />
-            )}
-            {tab === "citation" && <CitationTab initial={app.citations} />}
-            {tab === "overview" && <OverviewTab app={app} />}
-            {tab === "history" && <HistoryTab app={app} winnerDate={detected?.date} />}
-          </div>
-        </main>
+            </SidebarHeader>
 
-        {/* Slide panel */}
-        {panel && (
-          <SlidePanel
-            tool={panel.tool}
-            app={app}
-            code={code}
-            initialCitations={app.citations}
-            onClose={() => setPanel(null)}
-          />
-        )}
+            <SidebarContent className="p-2">
+              <SidebarMenu>
+                {NAV.map(({ id, label, Icon }) => (
+                  <SidebarMenuItem key={id}>
+                    <SidebarMenuButton
+                      onClick={() => setTab(id)}
+                      isActive={tab === id}
+                      className={`h-9 text-xs rounded-md border-l-2 transition ${
+                        tab === id
+                          ? "bg-zinc-900 border-zinc-300 text-zinc-100"
+                          : "border-transparent text-zinc-400 hover:bg-zinc-900/60 hover:text-zinc-200"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarContent>
+
+            <SidebarFooter className="p-3 border-t border-zinc-800">
+              <Card
+                onClick={() => setTab("history")}
+                className="group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 hover:border-zinc-600 hover:bg-zinc-900/60 transition"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 text-zinc-100">
+                    <Clock className="h-4 w-4 text-zinc-400" />
+                    <h3 className="text-xs font-semibold">Recent transactions</h3>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-300 transition" />
+                </div>
+                <div className="mt-2.5 space-y-1.5">
+                  {app.transactions.slice(0, 4).map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 text-[11px]">
+                      <CodeBadge code={t.code} />
+                      <div className="flex-1 truncate text-zinc-400">{t.description}</div>
+                      <div className="font-mono text-zinc-500">{t.date.slice(2)}</div>
+                    </div>
+                  ))}
+                  {app.transactions.length === 0 && (
+                    <p className="text-[11px] text-zinc-500">No transactions found.</p>
+                  )}
+                </div>
+                <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition">
+                  View full history <ChevronRight className="h-3 w-3" />
+                </div>
+              </Card>
+            </SidebarFooter>
+          </Sidebar>
+
+          {/* Main */}
+          <main className="flex-1 min-w-0 overflow-y-auto relative">
+            <div className="p-6 max-w-5xl">
+              {detected && (
+                <Card
+                  className={`mb-5 rounded-xl border ${c.border} ${c.tint} p-4 flex items-start gap-3`}
+                >
+                  <RefreshCw className={`h-4 w-4 mt-0.5 shrink-0 ${c.text}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-sm font-semibold ${c.text}`}>
+                      {banner.msg}
+                    </div>
+                    <div className="text-xs text-zinc-400 mt-0.5">
+                      {banner.sub}
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className={`rounded-full text-[11px] font-medium shrink-0 ${
+                      banner.chipUrgent
+                        ? "bg-red-500/20 text-red-200 border-red-500/40"
+                        : `${c.chip}`
+                    }`}
+                  >
+                    {banner.chip}
+                  </Badge>
+                </Card>
+              )}
+              {(tab === "overview" || tab === "history") && (
+                <div className="mb-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setTab("workflow")}
+                    className="text-zinc-400 hover:text-zinc-100 -ml-2"
+                  >
+                    <ChevronDown className="h-4 w-4 -rotate-90 mr-1" /> Back to workflow
+                  </Button>
+                </div>
+              )}
+              {tab === "workflow" && (
+                <WorkflowTab
+                  code={code}
+                  app={app}
+                  tasks={tasks}
+                  done={done}
+                  expanded={expanded}
+                  setExpanded={setExpanded}
+                  toggleTask={toggleTask}
+                  openTool={(tool, task) => setPanel({ tool, task })}
+                  contacts={mergedContacts}
+                  reassigning={reassigning}
+                  setReassigning={setReassigning}
+                  onReassign={reassign}
+                  onAddContact={addContact}
+                />
+              )}
+              {tab === "automation" && (
+                <AutomationTab
+                  app={app}
+                  code={code}
+                  played={scanPlayed}
+                  onPlayed={() => setScanPlayed(true)}
+                />
+              )}
+              {tab === "project" && (
+                <ProjectTab
+                  code={code}
+                  tasks={tasks}
+                  toggleTask={toggleTask}
+                  contacts={mergedContacts}
+                  reassigning={reassigning}
+                  setReassigning={setReassigning}
+                  onReassign={reassign}
+                  onAddContact={addContact}
+                />
+              )}
+              {tab === "citation" && <CitationTab initial={app.citations} />}
+              {tab === "overview" && <OverviewTab app={app} />}
+              {tab === "history" && <HistoryTab app={app} winnerDate={detected?.date} />}
+            </div>
+          </main>
+
+          {/* Slide panel */}
+          {panel && (
+            <SlidePanel
+              tool={panel.tool}
+              app={app}
+              code={code}
+              initialCitations={app.citations}
+              onClose={() => setPanel(null)}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
 
