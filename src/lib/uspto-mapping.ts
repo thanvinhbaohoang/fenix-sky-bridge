@@ -1,4 +1,4 @@
-import type { AppData, Transaction } from "@/components/demo/data";
+import type { AppData, Transaction, UsptoDocument } from "@/components/demo/data";
 import {
   DOCKETABLE,
   TRANSACTION_DESCRIPTIONS,
@@ -43,6 +43,7 @@ export function toAppData(
   txData: any,
   appNumber: string,
   templateHint?: string,
+  docsData?: any,
 ): AppData {
   const wrapper = apiData?.patentFileWrapperDataBag?.[0];
   const meta = wrapper?.applicationMetaData ?? {};
@@ -86,6 +87,51 @@ export function toAppData(
   const displayAppNo =
     wrapper?.applicationNumberText || appNumber || "—";
 
+  const documents: UsptoDocument[] = (() => {
+    const bag: any[] =
+      docsData?.documentBag ||
+      docsData?.patentFileWrapperDataBag?.[0]?.documentBag ||
+      [];
+    return bag
+      .map((d: any) => {
+        const opts: any[] = d.downloadOptionBag || [];
+        const pdf =
+          opts.find((o) => (o.mimeTypeIdentifier ?? "").toLowerCase().includes("pdf")) ||
+          opts[0];
+        return {
+          documentIdentifier: d.documentIdentifier ?? d.documentIdentifierText ?? "",
+          documentCode: d.documentCode ?? "",
+          description: d.documentCodeDescriptionText ?? d.description ?? d.documentCode ?? "—",
+          officialDate: (d.officialDate || d.mailDate || "").slice(0, 10),
+          direction: d.directionCategory ?? d.directionText ?? "",
+          pageCount: Number(d.pageTotalQuantity ?? d.pageCount ?? 0) || 0,
+          downloadUrl: pdf?.downloadUrl,
+          mimeType: pdf?.mimeTypeIdentifier,
+        };
+      })
+      .filter((d) => d.documentCode || d.description)
+      .sort((a, b) => (a.officialDate < b.officialDate ? 1 : -1));
+  })();
+
+  const extraMeta: AppData["meta"] = {
+    status: meta.applicationStatusDescriptionText || meta.applicationStatus || "—",
+    statusDate: (meta.applicationStatusDate || "").slice(0, 10) || undefined,
+    confirmationNumber: meta.applicationConfirmationNumber,
+    entityStatus: meta.entityStatusData?.smallEntityStatusIndicator
+      ? "Small entity"
+      : meta.entityStatusData?.businessEntityStatusCategory || undefined,
+    applicationType: meta.applicationTypeCategory || meta.applicationTypeLabelName,
+    patentNumber: meta.patentNumber,
+    grantDate: (meta.grantDate || "").slice(0, 10) || undefined,
+    publicationNumber: meta.earliestPublicationNumber,
+    publicationDate: (meta.earliestPublicationDate || "").slice(0, 10) || undefined,
+    class: meta.class,
+    subclass: meta.subclass,
+    groupArtUnit: meta.groupArtUnitNumber,
+    invention: meta.inventionTitle,
+    customer: meta.customerNumber,
+  };
+
   return {
     appNumber: displayAppNo,
     matter: meta.docketNumber || "—",
@@ -97,5 +143,7 @@ export function toAppData(
     filingDate: (meta.filingDate || "").slice(0, 10),
     transactions,
     citations: [],
+    documents,
+    meta: extraMeta,
   };
 }
