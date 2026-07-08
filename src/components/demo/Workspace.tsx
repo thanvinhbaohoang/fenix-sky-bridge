@@ -458,7 +458,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
             <SidebarHeader className="p-3 border-b border-zinc-800">
               <Card
                 onClick={() => setTab("overview")}
-                className="group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 hover:border-zinc-600 hover:bg-zinc-900/60 transition"
+                className="group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/40 text-zinc-100 p-3 hover:border-zinc-600 hover:bg-zinc-900/60 transition"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 text-zinc-100">
@@ -523,7 +523,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
             <SidebarFooter className="p-3 border-t border-zinc-800">
               <Card
                 onClick={() => setTab("history")}
-                className="group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 hover:border-zinc-600 hover:bg-zinc-900/60 transition"
+                className="group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/40 text-zinc-100 p-3 hover:border-zinc-600 hover:bg-zinc-900/60 transition"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 text-zinc-100">
