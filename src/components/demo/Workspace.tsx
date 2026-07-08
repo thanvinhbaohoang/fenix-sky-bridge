@@ -27,20 +27,21 @@ import {
   Zap,
   ClipboardList,
   BookOpen,
-  FileText,
-  Clock,
   Building2,
   User as UserIcon,
   Wrench,
   Search,
   RefreshCw,
+  ChevronRight,
+  ChevronDown,
+  FileText,
+  Clock,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
 
 type Tab =
   | "workflow"
@@ -59,8 +60,6 @@ const NAV: {
   { id: "automation", label: "Automation & Forms", Icon: Zap },
   { id: "project", label: "Project Management", Icon: ClipboardList },
   { id: "citation", label: "Citation Tool", Icon: BookOpen },
-  { id: "overview", label: "Application overview", Icon: FileText },
-  { id: "history", label: "Transaction history", Icon: Clock },
 ];
 
 function CodeBadge({ code }: { code: string }) {
@@ -529,9 +528,22 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 </Badge>
               </Card>
             )}
+            {(tab === "overview" || tab === "history") && (
+              <div className="mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setTab("workflow")}
+                  className="text-zinc-400 hover:text-zinc-100 -ml-2"
+                >
+                  <ChevronDown className="h-4 w-4 -rotate-90 mr-1" /> Back to workflow
+                </Button>
+              </div>
+            )}
             {tab === "workflow" && (
               <WorkflowTab
                 code={code}
+                app={app}
                 tasks={tasks}
                 done={done}
                 expanded={expanded}
@@ -543,6 +555,8 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 setReassigning={setReassigning}
                 onReassign={reassign}
                 onAddContact={addContact}
+                onViewOverview={() => setTab("overview")}
+                onViewHistory={() => setTab("history")}
               />
             )}
             {tab === "automation" && (
@@ -586,9 +600,82 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   );
 }
 
+function InfoCard({ app, onClick }: { app: AppData; onClick: () => void }) {
+  return (
+    <Card
+      onClick={onClick}
+      className="group rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 hover:border-zinc-600 hover:bg-zinc-900/60 transition cursor-pointer"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 text-zinc-100">
+          <FileText className="h-4 w-4 text-zinc-400" />
+          <h3 className="text-sm font-semibold">Application info</h3>
+        </div>
+        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 transition" />
+      </div>
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500 w-20 shrink-0">Number</span>
+          <span className="font-mono text-zinc-300">{app.appNumber}</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500 w-20 shrink-0">Title</span>
+          <span className="text-zinc-300 line-clamp-1">{app.title}</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500 w-20 shrink-0">Assignee</span>
+          <span className="text-zinc-300 line-clamp-1">{app.assignee}</span>
+        </div>
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-zinc-500 w-20 shrink-0">Filing date</span>
+          <span className="text-zinc-300">{app.filingDate || "—"}</span>
+        </div>
+      </div>
+      <div className="mt-4 flex items-center gap-1 text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition">
+        View more <ChevronRight className="h-3 w-3" />
+      </div>
+    </Card>
+  );
+}
+
+function TransactionsCard({ app, onClick }: { app: AppData; onClick: () => void }) {
+  const recent = [...app.transactions].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 4);
+  return (
+    <Card
+      onClick={onClick}
+      className="group rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 hover:border-zinc-600 hover:bg-zinc-900/60 transition cursor-pointer"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 text-zinc-100">
+          <Clock className="h-4 w-4 text-zinc-400" />
+          <h3 className="text-sm font-semibold">Recent transactions</h3>
+        </div>
+        <ChevronRight className="h-4 w-4 text-zinc-500 group-hover:text-zinc-300 transition" />
+      </div>
+      <div className="mt-3 space-y-2">
+        {recent.length === 0 ? (
+          <p className="text-xs text-zinc-500">No transactions found.</p>
+        ) : (
+          recent.map((t, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs">
+              <CodeBadge code={t.code} />
+              <span className="flex-1 text-zinc-300 line-clamp-1">{t.description}</span>
+              <span className="font-mono text-zinc-500">{t.date}</span>
+            </div>
+          ))
+        )}
+      </div>
+      <div className="mt-4 flex items-center gap-1 text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition">
+        View full history <ChevronRight className="h-3 w-3" />
+      </div>
+    </Card>
+  );
+}
+
 // --- Workflow tab ---
 function WorkflowTab({
   code,
+  app,
   tasks,
   done,
   expanded,
@@ -600,8 +687,11 @@ function WorkflowTab({
   setReassigning,
   onReassign,
   onAddContact,
+  onViewOverview,
+  onViewHistory,
 }: {
   code: string;
+  app: AppData;
   tasks: Task[];
   done: number;
   expanded: string | null;
@@ -613,6 +703,8 @@ function WorkflowTab({
   setReassigning: (id: string | null) => void;
   onReassign: (id: string, name: string | null) => void;
   onAddContact: (c: Contact) => void;
+  onViewOverview: () => void;
+  onViewHistory: () => void;
 }) {
   return (
     <div>
@@ -757,6 +849,15 @@ function WorkflowTab({
             </motion.div>
           );
         })}
+      </div>
+      <div className="mt-8">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
+          At a glance
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InfoCard app={app} onClick={onViewOverview} />
+          <TransactionsCard app={app} onClick={onViewHistory} />
+        </div>
       </div>
     </div>
   );
