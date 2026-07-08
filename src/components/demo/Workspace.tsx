@@ -737,8 +737,6 @@ function WorkflowTab({
   setReassigning,
   onReassign,
   onAddContact,
-  onViewOverview,
-  onViewHistory,
 }: {
   code: string;
   app: AppData;
@@ -753,8 +751,6 @@ function WorkflowTab({
   setReassigning: (id: string | null) => void;
   onReassign: (id: string, name: string | null) => void;
   onAddContact: (c: Contact) => void;
-  onViewOverview: () => void;
-  onViewHistory: () => void;
 }) {
   return (
     <div>
