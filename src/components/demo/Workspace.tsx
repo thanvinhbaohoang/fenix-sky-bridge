@@ -725,7 +725,6 @@ function TransactionsCard({ app, onClick }: { app: AppData; onClick: () => void 
 // --- Workflow tab ---
 function WorkflowTab({
   code,
-  app,
   tasks,
   done,
   expanded,
@@ -739,7 +738,6 @@ function WorkflowTab({
   onAddContact,
 }: {
   code: string;
-  app: AppData;
   tasks: Task[];
   done: number;
   expanded: string | null;
