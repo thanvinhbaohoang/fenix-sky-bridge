@@ -1292,25 +1292,122 @@ ${grouped.npl.map((r, i) => `  ${i + 1}. ${r.reference.padEnd(28)} ${r.pages} pp
 
 // --- Overview ---
 function OverviewTab({ app }: { app: AppData }) {
-  const fields: [string, string, boolean?][] = [
+  const m = app.meta ?? {};
+  const str = (v: unknown) =>
+    v === null || v === undefined || v === "" ? undefined : String(v);
+
+  const fields: [string, string | undefined, boolean?][] = [
     ["Application number", app.appNumber, true],
+    ["Confirmation #", str(m.confirmationNumber), true],
     ["Title", app.title],
-    ["Assignee", app.assignee],
+    ["Status", str(m.status) ?? "—"],
+    ["Status date", str(m.statusDate), true],
+    ["Application type", str(m.applicationType)],
+    ["Assignee / Applicant", app.assignee],
     ["Inventors", app.inventors],
-    ["Art Unit", app.artUnit, true],
     ["Examiner", app.examiner],
-    ["Status", "Pending"],
+    ["Art Unit", app.artUnit, true],
+    ["Class / Subclass", [str(m.class), str(m.subclass)].filter(Boolean).join(" / ") || undefined, true],
+    ["Entity status", str(m.entityStatus)],
+    ["Customer #", str(m.customer), true],
     ["Matter number", app.matter, true],
     ["Filing date", app.filingDate, true],
+    ["Publication #", str(m.publicationNumber), true],
+    ["Publication date", str(m.publicationDate), true],
+    ["Patent #", str(m.patentNumber), true],
+    ["Grant date", str(m.grantDate), true],
   ];
+
+  const docs = app.documents ?? [];
+
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {fields.map(([label, val, mono]) => (
-        <div key={label} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
-          <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
-          <div className={`mt-1 text-sm font-medium ${mono ? "font-mono" : ""}`}>{val}</div>
+    <div className="space-y-6">
+      <section>
+        <h3 className="text-xs uppercase tracking-wider text-zinc-500 mb-2">
+          Application details
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {fields
+            .filter(([, v]) => v !== undefined)
+            .map(([label, val, mono]) => (
+              <div
+                key={label}
+                className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3"
+              >
+                <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                  {label}
+                </div>
+                <div
+                  className={`mt-1 text-sm font-medium text-zinc-100 break-words ${
+                    mono ? "font-mono" : ""
+                  }`}
+                >
+                  {val}
+                </div>
+              </div>
+            ))}
         </div>
-      ))}
+      </section>
+
+      <section>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs uppercase tracking-wider text-zinc-500">
+            Documents{docs.length ? ` (${docs.length})` : ""}
+          </h3>
+          <span className="text-[10px] text-zinc-600">
+            Live from USPTO ODP — click to open PDF
+          </span>
+        </div>
+        {docs.length === 0 ? (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 text-xs text-zinc-500">
+            No documents available for this application.
+          </div>
+        ) : (
+          <div className="rounded-lg border border-zinc-800 overflow-hidden">
+            <div className="divide-y divide-zinc-800">
+              {docs.map((d) => {
+                const href = d.downloadUrl
+                  ? `/api/uspto-download?url=${encodeURIComponent(d.downloadUrl)}`
+                  : undefined;
+                const Row = (
+                  <div className="flex items-center gap-3 px-3 py-2 text-xs hover:bg-zinc-900/60 transition">
+                    <span className="inline-flex items-center justify-center w-14 py-0.5 rounded text-[10px] font-mono font-semibold border border-zinc-700 bg-zinc-900 text-zinc-300 shrink-0">
+                      {d.documentCode || "—"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-zinc-200 truncate">{d.description}</div>
+                      <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                        {d.officialDate}
+                        {d.direction ? ` · ${d.direction}` : ""}
+                        {d.pageCount ? ` · ${d.pageCount} pp.` : ""}
+                      </div>
+                    </div>
+                    <FileText className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
+                  </div>
+                );
+                return href ? (
+                  <a
+                    key={d.documentIdentifier || `${d.documentCode}-${d.officialDate}`}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block"
+                  >
+                    {Row}
+                  </a>
+                ) : (
+                  <div
+                    key={d.documentIdentifier || `${d.documentCode}-${d.officialDate}`}
+                    className="opacity-70"
+                  >
+                    {Row}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
