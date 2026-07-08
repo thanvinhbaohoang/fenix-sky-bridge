@@ -421,8 +421,8 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, done: !t.done } : t)));
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
+    <SidebarProvider className="bg-zinc-950">
+      <div className="h-screen w-full bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
         {/* Topbar */}
         <header className="h-14 border-b border-zinc-800 bg-zinc-950 flex items-center px-4 gap-4 shrink-0">
           <button onClick={onChangeApp} className="flex items-center gap-2">
@@ -452,9 +452,9 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
           </div>
         </header>
 
-        <div className="flex-1 flex min-h-0">
+        <div className="flex-1 flex min-h-0 overflow-hidden">
           {/* Sidebar */}
-          <Sidebar collapsible="none" className="w-[260px] shrink-0 border-r border-zinc-800 bg-zinc-950 text-zinc-100">
+          <Sidebar collapsible="none" className="h-full w-[260px] shrink-0 border-r border-zinc-800 bg-zinc-950 text-zinc-100">
             <SidebarHeader className="p-3 border-b border-zinc-800">
               <Card
                 onClick={() => setTab("overview")}
