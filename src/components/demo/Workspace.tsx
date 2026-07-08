@@ -592,20 +592,20 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                 </div>
               )}
               {tab === "workflow" && (
-              <WorkflowTab
-                code={code}
-                tasks={tasks}
-                done={done}
-                expanded={expanded}
-                setExpanded={setExpanded}
-                toggleTask={toggleTask}
-                openTool={(tool, task) => setPanel({ tool, task })}
-                contacts={mergedContacts}
-                reassigning={reassigning}
-                setReassigning={setReassigning}
-                onReassign={reassign}
-                onAddContact={addContact}
-              />
+                <WorkflowTab
+                  code={code}
+                  tasks={tasks}
+                  done={done}
+                  expanded={expanded}
+                  setExpanded={setExpanded}
+                  toggleTask={toggleTask}
+                  openTool={(tool, task) => setPanel({ tool, task })}
+                  contacts={mergedContacts}
+                  reassigning={reassigning}
+                  setReassigning={setReassigning}
+                  onReassign={reassign}
+                  onAddContact={addContact}
+                />
               )}
               {tab === "automation" && (
                 <AutomationTab
