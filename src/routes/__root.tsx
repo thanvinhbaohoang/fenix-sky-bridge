@@ -92,6 +92,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Fenix.AI — AI-Powered Patent Workflows" },
+      { name: "description", content: "Turn hours of Office Action review, USPTO forms, and citations into clear results in minutes." },
+      { property: "og:description", content: "Turn hours of Office Action review, USPTO forms, and citations into clear results in minutes." },
+      { name: "twitter:description", content: "Turn hours of Office Action review, USPTO forms, and citations into clear results in minutes." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d30728c5-e531-4048-a647-adb3fd856011/id-preview-f34a568a--43a05573-2290-4b6f-8a75-9195fe62c700.lovable.app-1783469132592.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d30728c5-e531-4048-a647-adb3fd856011/id-preview-f34a568a--43a05573-2290-4b6f-8a75-9195fe62c700.lovable.app-1783469132592.png" },
     ],
     links: [
       {
