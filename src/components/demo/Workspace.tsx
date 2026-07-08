@@ -552,8 +552,8 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
           </Sidebar>
 
           {/* Main */}
-          <main className="flex-1 min-w-0 overflow-y-auto relative">
-            <div className="p-6 max-w-5xl">
+          <main className="flex-1 min-w-0 overflow-y-auto relative bg-zinc-950">
+            <div className="p-6 w-full">
               {detected && (
                 <Card
                   className={`mb-5 rounded-xl border ${c.border} ${c.tint} p-4 flex items-start gap-3`}
