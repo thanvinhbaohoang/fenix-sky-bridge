@@ -200,8 +200,6 @@ function DocketEventsCard({
   activeKey: string;
   onSelect: (key: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   // Read persisted done state so the sidebar reflects progress in real time.
   // We deliberately re-read on every render — the store is tiny and this
   // avoids stale status right after a checkbox toggle.
@@ -222,91 +220,71 @@ function DocketEventsCard({
     };
   };
 
-  const canExpand = events.length > 3;
+  const activeEvent = events.find((ev) => ev.key === activeKey) ?? events[events.length - 1];
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2 text-zinc-100">
-          <Clock className="h-4 w-4 text-zinc-400" />
-          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">
-            Docket events
-          </h3>
-        </div>
-        {canExpand && (
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="text-[10px] text-zinc-500 hover:text-zinc-200 px-1.5 py-0.5 rounded hover:bg-zinc-900/60 transition"
-          >
-            {expanded ? "Show less" : `Show all ${events.length}`}
-          </button>
-        )}
+      <div className="flex items-center gap-2 text-zinc-100 px-1">
+        <Clock className="h-4 w-4 text-zinc-400" />
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">
+          Docket events
+        </h3>
       </div>
-      <div
-        className={`space-y-1.5 overflow-y-auto pr-0.5 transition-[max-height] duration-300 ease-out scrollbar-thin ${
-          expanded ? "max-h-[420px]" : "max-h-[220px]"
-        }`}
-      >
+      <div className="space-y-1.5">
         {events.length === 0 && (
           <p className="text-[11px] text-zinc-500 px-1">
             No docket events yet.
           </p>
         )}
-        {events.map((ev) => {
-          const c = eventColor(ev.code);
-          const status = statusFor(ev.key, ev.code);
-          const isActive = ev.key === activeKey;
-          const dot =
-            status.tone === "done"
-              ? "bg-emerald-400"
-              : status.tone === "open"
-                ? "bg-blue-400"
-                : status.tone === "idle"
-                  ? "bg-zinc-500"
-                  : "bg-zinc-600";
-          return (
-            <button
-              key={ev.key}
-              onClick={() => onSelect(ev.key)}
-              className={`group w-full text-left rounded-lg border p-2 flex items-start gap-2.5 transition ${
-                isActive
-                  ? "border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/40"
-                  : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-600 hover:bg-zinc-900/70"
-              }`}
+        {activeEvent && (
+          <button
+            key={activeEvent.key}
+            onClick={() => onSelect(activeEvent.key)}
+            className="group w-full text-left rounded-lg border p-2 flex items-start gap-2.5 transition border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/40"
+          >
+            <span
+              className={`mt-0.5 inline-flex items-center justify-center w-12 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${eventColor(activeEvent.code).bg} ${eventColor(activeEvent.code).text} ${eventColor(activeEvent.code).border}`}
             >
-              <span
-                className={`mt-0.5 inline-flex items-center justify-center w-12 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${c.bg} ${c.text} ${c.border}`}
-              >
-                {ev.badge}
-              </span>
-              <span className="flex-1 min-w-0 leading-tight">
-                <div className="text-[11px] font-semibold text-zinc-100 truncate">
-                  {ev.label}
-                </div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                  {ev.date}
-                  {isActive && (
-                    <span className="ml-1 text-blue-300">· active</span>
-                  )}
-                </div>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <span className={`inline-block h-1.5 w-1.5 rounded-full ${dot}`} />
-                  <span
-                    className={`text-[10px] ${
-                      status.tone === "done"
-                        ? "text-emerald-300"
-                        : status.tone === "open"
-                          ? "text-blue-300"
-                          : "text-zinc-500"
-                    }`}
-                  >
-                    {status.text}
-                  </span>
-                </div>
-              </span>
-            </button>
-          );
-        })}
+              {activeEvent.badge}
+            </span>
+            <span className="flex-1 min-w-0 leading-tight">
+              <div className="text-[11px] font-semibold text-zinc-100 truncate">
+                {activeEvent.label}
+              </div>
+              <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                {activeEvent.date}
+                <span className="ml-1 text-blue-300">· active</span>
+              </div>
+              {(() => {
+                const status = statusFor(activeEvent.key, activeEvent.code);
+                const dot =
+                  status.tone === "done"
+                    ? "bg-emerald-400"
+                    : status.tone === "open"
+                      ? "bg-blue-400"
+                      : status.tone === "idle"
+                        ? "bg-zinc-500"
+                        : "bg-zinc-600";
+                return (
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className={`inline-block h-1.5 w-1.5 rounded-full ${dot}`} />
+                    <span
+                      className={`text-[10px] ${
+                        status.tone === "done"
+                          ? "text-emerald-300"
+                          : status.tone === "open"
+                            ? "text-blue-300"
+                            : "text-zinc-500"
+                      }`}
+                    >
+                      {status.text}
+                    </span>
+                  </div>
+                );
+              })()}
+            </span>
+          </button>
+        )}
         <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950/40 p-2 flex items-start gap-2.5 opacity-70">
           <span className="mt-0.5 inline-flex items-center justify-center w-12 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 bg-zinc-900 text-zinc-500 border-zinc-800">
             NEXT
