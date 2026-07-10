@@ -706,6 +706,8 @@ function WorkflowTab({
   setReassigning,
   onReassign,
   onAddContact,
+  anchorDate,
+  hardDeadline,
 }: {
   code: string;
   tasks: Task[];
@@ -719,6 +721,8 @@ function WorkflowTab({
   setReassigning: (id: string | null) => void;
   onReassign: (id: string, name: string | null) => void;
   onAddContact: (c: Contact) => void;
+  anchorDate?: string;
+  hardDeadline?: string;
 }) {
   return (
     <div>
