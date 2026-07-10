@@ -194,13 +194,11 @@ function DocketEventsCard({
   appNumber,
   activeKey,
   onSelect,
-  onViewHistory,
 }: {
   events: DocketEvent[];
   appNumber: string;
   activeKey: string;
   onSelect: (key: string) => void;
-  onViewHistory: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -228,19 +226,13 @@ function DocketEventsCard({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center px-1">
         <div className="flex items-center gap-2 text-zinc-100">
           <Clock className="h-4 w-4 text-zinc-400" />
           <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">
             Docket events
           </h3>
         </div>
-        <button
-          onClick={onViewHistory}
-          className="text-[10px] text-zinc-500 hover:text-zinc-200"
-        >
-          Full log
-        </button>
       </div>
       <div
         className={`space-y-1.5 overflow-y-auto pr-0.5 transition-[max-height] duration-300 ease-out ${
