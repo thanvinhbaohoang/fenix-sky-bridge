@@ -695,6 +695,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
 // --- Workflow tab ---
 function WorkflowTab({
   code,
+  code,
   tasks,
   done,
   expanded,
