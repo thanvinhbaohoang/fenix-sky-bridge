@@ -202,6 +202,8 @@ function DocketEventsCard({
   onSelect: (key: string) => void;
   onViewHistory: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   // Read persisted done state so the sidebar reflects progress in real time.
   // We deliberately re-read on every render — the store is tiny and this
   // avoids stale status right after a checkbox toggle.
@@ -222,6 +224,8 @@ function DocketEventsCard({
     };
   };
 
+  const canExpand = events.length > 4;
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between px-1">
@@ -238,7 +242,11 @@ function DocketEventsCard({
           Full log
         </button>
       </div>
-      <div className="space-y-1.5">
+      <div
+        className={`space-y-1.5 overflow-y-auto pr-0.5 transition-[max-height] duration-300 ease-out ${
+          expanded ? "max-h-[420px]" : "max-h-[280px]"
+        }`}
+      >
         {events.length === 0 && (
           <p className="text-[11px] text-zinc-500 px-1">
             No docket events yet.
@@ -317,6 +325,14 @@ function DocketEventsCard({
           </span>
         </div>
       </div>
+      {canExpand && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full text-center text-[10px] text-zinc-500 hover:text-zinc-200 py-1 rounded hover:bg-zinc-900/60 transition"
+        >
+          {expanded ? "Show less" : `Show all ${events.length} events`}
+        </button>
+      )}
     </div>
   );
 }
