@@ -408,11 +408,44 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   // reset state on app change
   useEffect(() => {
     setTab("workflow");
-    setTasks((TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t })));
+    const base = (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t }));
+    // Merge deadline overrides saved from /template
+    try {
+      if (typeof window !== "undefined") {
+        const raw = window.localStorage.getItem("fenixai.templates.v1");
+        if (raw) {
+          const parsed = JSON.parse(raw) as Record<
+            string,
+            { tasks: Task[] }
+          >;
+          const overrideTasks = parsed?.[code]?.tasks;
+          if (Array.isArray(overrideTasks)) {
+            const byId = new Map(overrideTasks.map((t) => [t.id, t]));
+            for (const t of base) {
+              const o = byId.get(t.id);
+              if (o?.deadline) t.deadline = o.deadline;
+            }
+          }
+        }
+      }
+    } catch {}
+    setTasks(base);
     setExpanded(null);
     setPanel(null);
     setScanPlayed(false);
   }, [app.appNumber, code]);
+
+  const anchorDate = useMemo(
+    () => (detected ? getMailDate(detected, app.transactions) : undefined),
+    [detected, app.transactions],
+  );
+  const hardDeadline = useMemo(() => {
+    if (!anchorDate) return undefined;
+    const months = code === "NOA" || code === "ISSUE.NTF" ? 3 : 6;
+    const d = new Date(anchorDate);
+    d.setMonth(d.getMonth() + months);
+    return d.toISOString().slice(0, 10);
+  }, [anchorDate, code]);
 
   const c = eventColor(code);
   const banner = statusBanner(code, app);
