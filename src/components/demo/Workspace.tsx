@@ -902,15 +902,35 @@ function WorkflowTab({
                           onClose={() => setReassigning(null)}
                         />
                       )}
-                      <Link
-                        to="/task/$id"
-                        params={{ id: t.id }}
-                        search={{ app: appNumber, event: code }}
-                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                        className="ml-auto text-[10px] px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500 inline-flex items-center gap-1"
-                      >
-                        Open details →
-                      </Link>
+                      <Sheet>
+                        <SheetTrigger asChild>
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className="ml-auto text-[10px] px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500 inline-flex items-center gap-1"
+                          >
+                            Open details →
+                          </button>
+                        </SheetTrigger>
+                        <SheetContent
+                          side="right"
+                          className="w-full sm:max-w-2xl bg-zinc-950 border-zinc-800 text-zinc-100 overflow-y-auto"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <SheetHeader>
+                            <SheetTitle className="text-zinc-100 text-base">
+                              Task details
+                            </SheetTitle>
+                          </SheetHeader>
+                          <div className="mt-4">
+                            <TaskDetailPanel
+                              taskId={t.id}
+                              app={appNumber}
+                              event={code}
+                            />
+                          </div>
+                        </SheetContent>
+                      </Sheet>
                     </div>
                   </div>
                 </div>
