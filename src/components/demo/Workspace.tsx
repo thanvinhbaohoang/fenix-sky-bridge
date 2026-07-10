@@ -279,11 +279,27 @@ function DocketEventsCard({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 text-zinc-100 px-1">
-        <Clock className="h-4 w-4 text-zinc-400" />
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">
-          Docket events
-        </h3>
+      <div className="flex items-center justify-between text-zinc-100 px-1">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">
+            Docket events
+          </h3>
+        </div>
+        {hasMore && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 transition"
+            aria-expanded={expanded}
+          >
+            {expanded ? "View less" : "View more"}
+            <ChevronDown
+              className={`h-3 w-3 transition-transform duration-300 ${
+                expanded ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+        )}
       </div>
 
       <div className="space-y-1.5">
@@ -293,21 +309,24 @@ function DocketEventsCard({
           </p>
         )}
 
-        {!expanded && activeEvent && renderEvent(activeEvent, true)}
-
-        {expanded && (
-          <div className="max-h-[220px] overflow-y-auto scrollbar-thin pr-0.5 space-y-1.5">
-            {events.map((ev) => renderEvent(ev, ev.key === activeKey))}
-          </div>
-        )}
+        {activeEvent && renderEvent(activeEvent, true)}
 
         {hasMore && (
-          <button
-            onClick={() => setExpanded((v) => !v)}
-            className="w-full text-center text-[10px] text-zinc-400 hover:text-zinc-200 py-1 rounded border border-dashed border-zinc-700 hover:border-zinc-500 transition"
+          <motion.div
+            initial={false}
+            animate={{
+              height: expanded ? "auto" : 0,
+              opacity: expanded ? 1 : 0,
+            }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="overflow-hidden"
           >
-            {expanded ? "View less" : "View more"}
-          </button>
+            <div className="max-h-[220px] overflow-y-auto scrollbar-thin pr-0.5 space-y-1.5 pt-1.5">
+              {events
+                .filter((ev) => ev.key !== activeEvent?.key)
+                .map((ev) => renderEvent(ev, false))}
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
