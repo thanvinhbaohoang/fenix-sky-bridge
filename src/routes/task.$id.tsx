@@ -226,7 +226,7 @@ function TaskDetailPage() {
       task_key: taskKey,
       kind,
       body,
-      metadata,
+      metadata: metadata as never,
     });
     if (error) alert(error.message);
     else loadActivity();
