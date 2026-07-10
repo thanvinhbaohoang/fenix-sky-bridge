@@ -194,13 +194,11 @@ function DocketEventsCard({
   appNumber,
   activeKey,
   onSelect,
-  onViewHistory,
 }: {
   events: DocketEvent[];
   appNumber: string;
   activeKey: string;
   onSelect: (key: string) => void;
-  onViewHistory: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -228,19 +226,13 @@ function DocketEventsCard({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between px-1">
+      <div className="flex items-center px-1">
         <div className="flex items-center gap-2 text-zinc-100">
           <Clock className="h-4 w-4 text-zinc-400" />
           <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">
             Docket events
           </h3>
         </div>
-        <button
-          onClick={onViewHistory}
-          className="text-[10px] text-zinc-500 hover:text-zinc-200"
-        >
-          Full log
-        </button>
       </div>
       <div
         className={`space-y-1.5 overflow-y-auto pr-0.5 transition-[max-height] duration-300 ease-out ${
@@ -837,7 +829,6 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                   setSelectedKey(key);
                   setTab("workflow");
                 }}
-                onViewHistory={() => setTab("history")}
               />
             </SidebarFooter>
           </Sidebar>
@@ -1788,6 +1779,39 @@ function OverviewTab({ app }: { app: AppData }) {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h3 className="text-xs uppercase tracking-wider text-zinc-500 mb-2">
+          Transactions ({app.transactions.length})
+        </h3>
+        {app.transactions.length === 0 ? (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 text-xs text-zinc-500">
+            No transactions available for this application.
+          </div>
+        ) : (
+          <div className="rounded-lg border border-zinc-800 overflow-hidden">
+            <div className="divide-y divide-zinc-800">
+              {[...app.transactions]
+                .sort((a, b) => (a.date < b.date ? 1 : -1))
+                .map((t) => {
+                  const c = eventColor(t.code);
+                  return (
+                    <div
+                      key={`${t.code}-${t.date}`}
+                      className="flex items-center gap-3 px-4 py-2.5 text-xs hover:bg-zinc-900/40 transition"
+                    >
+                      <CodeBadge code={t.code} />
+                      <span className="flex-1 text-zinc-300 truncate">
+                        {t.description}
+                      </span>
+                      <span className="font-mono text-zinc-500 shrink-0">{t.date}</span>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         )}

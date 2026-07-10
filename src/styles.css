@@ -178,6 +178,34 @@
     border-color: var(--color-border);
   }
 
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.35 0.01 260) oklch(0.18 0.02 265);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: oklch(0.18 0.02 265);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.35 0.01 260);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.45 0.02 260);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: oklch(0.18 0.02 265);
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
