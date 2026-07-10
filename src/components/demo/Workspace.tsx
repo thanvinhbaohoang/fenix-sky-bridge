@@ -648,6 +648,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                   onAddContact={addContact}
                   anchorDate={anchorDate}
                   hardDeadline={hardDeadline}
+                  appNumber={app.appNumber}
                 />
               )}
               {tab === "automation" && (
