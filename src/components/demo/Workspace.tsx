@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { Link } from "@tanstack/react-router";
+import { TaskDetailPanel } from "./TaskDetailPanel";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   APPS,
   AppData,
