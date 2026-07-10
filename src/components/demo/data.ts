@@ -259,6 +259,10 @@ export type Task = {
   assignee: string | null;
   tools: string[];
   done?: boolean;
+  deadline?: {
+    basis: "creation" | "hard_deadline";
+    days: number;
+  };
 };
 
 export const TASKS_BY_EVENT: Record<string, Task[]> = {
