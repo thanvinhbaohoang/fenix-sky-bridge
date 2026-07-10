@@ -105,6 +105,221 @@ function Avatar({ name }: { name: string | null }) {
 export type Contact = { name: string; email: string };
 
 const CONTACTS_KEY = "fenixai.contacts.v1";
+const PROJECTS_KEY = "fenixai.projects.v1";
+
+type ProjectStore = Record<
+  string, // appNumber
+  Record<string, { doneIds: string[]; updatedAt: string }> // eventKey → done state
+>;
+
+function readProjectStore(): ProjectStore {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PROJECTS_KEY);
+    return raw ? (JSON.parse(raw) as ProjectStore) : {};
+  } catch {
+    return {};
+  }
+}
+
+function loadProjectDone(appNumber: string, eventKey: string): string[] {
+  if (!eventKey) return [];
+  const store = readProjectStore();
+  return store[appNumber]?.[eventKey]?.doneIds ?? [];
+}
+
+function saveProjectDone(
+  appNumber: string,
+  eventKey: string,
+  doneIds: string[],
+) {
+  if (typeof window === "undefined" || !eventKey) return;
+  try {
+    const store = readProjectStore();
+    const appStore = store[appNumber] ?? {};
+    appStore[eventKey] = { doneIds, updatedAt: new Date().toISOString() };
+    store[appNumber] = appStore;
+    window.localStorage.setItem(PROJECTS_KEY, JSON.stringify(store));
+  } catch {}
+}
+
+// --- Docket events sidebar --------------------------------------------------
+
+type DocketEvent = {
+  key: string;
+  code: string;
+  date: string;
+  label: string;
+  badge: string;
+};
+
+const EVENT_SHORT_LABEL: Record<string, string> = {
+  "APP.FILE.REC": "Application filed",
+  CTNF: "Non-Final",
+  CTFR: "Final rejection",
+  CTAV: "Advisory",
+  CTRS: "Restriction",
+  RCEX: "RCE",
+  NOA: "Notice of allowance",
+  "ISSUE.NTF": "Issue notice",
+  "NTC.PUB": "Publication",
+  ABN: "Abandonment",
+};
+
+const EVENT_SHORT_BADGE: Record<string, string> = {
+  "APP.FILE.REC": "FILE",
+  "ISSUE.NTF": "ISSU",
+  "NTC.PUB": "PUB",
+};
+
+function buildDocketEvents(txs: Transaction[]): DocketEvent[] {
+  const asc = txs
+    .filter((t) => DOCKETABLE.includes(t.code))
+    .slice()
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+  const counts: Record<string, number> = {};
+  return asc.map((t) => {
+    counts[t.code] = (counts[t.code] ?? 0) + 1;
+    const base = EVENT_SHORT_LABEL[t.code] ?? EVENT_LABELS[t.code] ?? t.code;
+    // Application filed / abandonment are typically one-shot; drop the "#N".
+    const singleShot = t.code === "APP.FILE.REC";
+    const label = singleShot ? base : `${base} #${counts[t.code]}`;
+    const badge = EVENT_SHORT_BADGE[t.code] ?? t.code;
+    return { key: `${t.code}|${t.date}`, code: t.code, date: t.date, label, badge };
+  });
+}
+
+function DocketEventsCard({
+  events,
+  appNumber,
+  activeKey,
+  onSelect,
+  onViewHistory,
+}: {
+  events: DocketEvent[];
+  appNumber: string;
+  activeKey: string;
+  onSelect: (key: string) => void;
+  onViewHistory: () => void;
+}) {
+  // Read persisted done state so the sidebar reflects progress in real time.
+  // We deliberately re-read on every render — the store is tiny and this
+  // avoids stale status right after a checkbox toggle.
+  const statusFor = (key: string, code: string) => {
+    const doneIds = loadProjectDone(appNumber, key);
+    const total = (TASKS_BY_EVENT[code] ?? []).length;
+    if (!total) {
+      return { text: "No tasks defined", tone: "muted" as const, ratio: null };
+    }
+    const done = doneIds.length;
+    if (done === 0) return { text: "No project yet", tone: "idle" as const, ratio: null };
+    if (done >= total)
+      return { text: "Project complete", tone: "done" as const, ratio: null };
+    return {
+      text: `Project open · ${done}/${total}`,
+      tone: "open" as const,
+      ratio: done / total,
+    };
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2 text-zinc-100">
+          <Clock className="h-4 w-4 text-zinc-400" />
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">
+            Docket events
+          </h3>
+        </div>
+        <button
+          onClick={onViewHistory}
+          className="text-[10px] text-zinc-500 hover:text-zinc-200"
+        >
+          Full log
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {events.length === 0 && (
+          <p className="text-[11px] text-zinc-500 px-1">
+            No docket events yet.
+          </p>
+        )}
+        {events.map((ev) => {
+          const c = eventColor(ev.code);
+          const status = statusFor(ev.key, ev.code);
+          const isActive = ev.key === activeKey;
+          const dot =
+            status.tone === "done"
+              ? "bg-emerald-400"
+              : status.tone === "open"
+                ? "bg-blue-400"
+                : status.tone === "idle"
+                  ? "bg-zinc-500"
+                  : "bg-zinc-600";
+          return (
+            <button
+              key={ev.key}
+              onClick={() => onSelect(ev.key)}
+              className={`group w-full text-left rounded-lg border p-2 flex items-start gap-2.5 transition ${
+                isActive
+                  ? "border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/40"
+                  : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-600 hover:bg-zinc-900/70"
+              }`}
+            >
+              <span
+                className={`mt-0.5 inline-flex items-center justify-center w-12 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${c.bg} ${c.text} ${c.border}`}
+              >
+                {ev.badge}
+              </span>
+              <span className="flex-1 min-w-0 leading-tight">
+                <div className="text-[11px] font-semibold text-zinc-100 truncate">
+                  {ev.label}
+                </div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                  {ev.date}
+                  {isActive && (
+                    <span className="ml-1 text-blue-300">· active</span>
+                  )}
+                </div>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className={`inline-block h-1.5 w-1.5 rounded-full ${dot}`} />
+                  <span
+                    className={`text-[10px] ${
+                      status.tone === "done"
+                        ? "text-emerald-300"
+                        : status.tone === "open"
+                          ? "text-blue-300"
+                          : "text-zinc-500"
+                    }`}
+                  >
+                    {status.text}
+                  </span>
+                </div>
+              </span>
+            </button>
+          );
+        })}
+        <div className="rounded-lg border border-dashed border-zinc-800 bg-zinc-950/40 p-2 flex items-start gap-2.5 opacity-70">
+          <span className="mt-0.5 inline-flex items-center justify-center w-12 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 bg-zinc-900 text-zinc-500 border-zinc-800">
+            NEXT
+          </span>
+          <span className="flex-1 min-w-0 leading-tight">
+            <div className="text-[11px] font-semibold text-zinc-300 truncate">
+              Next event
+            </div>
+            <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+              Awaiting ODP
+            </div>
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-zinc-600" />
+              <span className="text-[10px] text-zinc-500">No project yet</span>
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function loadContacts(clientName: string): Contact[] {
   const defaults: Contact[] = [
@@ -314,8 +529,23 @@ function StepNum({ n }: { n: number }) {
 }
 
 export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () => void }) {
-  const detected = useMemo(() => detectEvent(app.transactions), [app]);
+  const autoDetected = useMemo(() => detectEvent(app.transactions), [app]);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+
+  // Reset the pinned event whenever the application changes.
+  useEffect(() => {
+    setSelectedKey(null);
+  }, [app.appNumber]);
+
+  const detected = useMemo(() => {
+    if (!selectedKey) return autoDetected;
+    const [c, d] = selectedKey.split("|");
+    return (
+      app.transactions.find((t) => t.code === c && t.date === d) ?? autoDetected
+    );
+  }, [selectedKey, autoDetected, app.transactions]);
   const code = detected?.code ?? "";
+  const activeKey = detected ? `${detected.code}|${detected.date}` : "";
   const [tab, setTab] = useState<Tab>("workflow");
   const [tasks, setTasks] = useState<Task[]>(() => (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t })));
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -437,11 +667,31 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
         }
       }
     } catch {}
+    // Merge persisted "done" state for this (app, docket event)
+    try {
+      const doneIds = loadProjectDone(app.appNumber, activeKey);
+      if (doneIds.length) {
+        const doneSet = new Set(doneIds);
+        for (const t of base) t.done = doneSet.has(t.id);
+      }
+    } catch {}
     setTasks(base);
     setExpanded(null);
     setPanel(null);
     setScanPlayed(false);
-  }, [app.appNumber, code]);
+  }, [app.appNumber, code, activeKey]);
+
+  // Persist "done" state per (app, docket event) so status shows in the sidebar.
+  useEffect(() => {
+    if (!activeKey) return;
+    const doneIds = tasks.filter((t) => t.done).map((t) => t.id);
+    saveProjectDone(app.appNumber, activeKey, doneIds);
+  }, [tasks, app.appNumber, activeKey]);
+
+  const docketEvents = useMemo(
+    () => buildDocketEvents(app.transactions),
+    [app.transactions],
+  );
 
   const anchorDate = useMemo(
     () => (detected ? getMailDate(detected, app.transactions) : undefined),
@@ -563,40 +813,16 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
             </SidebarContent>
 
             <SidebarFooter className="p-3 border-t border-zinc-800">
-              <Card
-                onClick={() => setTab("history")}
-                className="group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/40 text-zinc-100 p-3 hover:border-zinc-600 hover:bg-zinc-900/60 transition"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 text-zinc-100">
-                    <Clock className="h-4 w-4 text-zinc-400" />
-                    <h3 className="text-xs font-semibold">Recent transactions</h3>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-300 transition" />
-                </div>
-                <div className="mt-2.5 space-y-2">
-                  {app.transactions.slice(0, 4).map((t, i) => {
-                    const c = eventColor(t.code);
-                    return (
-                      <div key={i} className="flex items-start gap-2.5 text-[11px]">
-                        <span className={`mt-0.5 inline-flex items-center justify-center w-10 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${c.bg} ${c.text} ${c.border}`}>
-                          {t.code}
-                        </span>
-                        <div className="flex-1 min-w-0 leading-tight">
-                          <div className="text-zinc-300 truncate">{t.description}</div>
-                          <div className="text-zinc-500 font-mono mt-0.5">{t.date}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {app.transactions.length === 0 && (
-                    <p className="text-[11px] text-zinc-500">No transactions found.</p>
-                  )}
-                </div>
-                <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition">
-                  View full history <ChevronRight className="h-3 w-3" />
-                </div>
-              </Card>
+              <DocketEventsCard
+                events={docketEvents}
+                appNumber={app.appNumber}
+                activeKey={activeKey}
+                onSelect={(key) => {
+                  setSelectedKey(key);
+                  setTab("workflow");
+                }}
+                onViewHistory={() => setTab("history")}
+              />
             </SidebarFooter>
           </Sidebar>
 
