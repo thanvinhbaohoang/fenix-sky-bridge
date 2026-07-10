@@ -427,6 +427,64 @@ function TaskEditor({
       </div>
 
       <div>
+        <div className="text-xs text-zinc-500 mb-1.5">Deadline</div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="inline-flex items-center gap-1.5 text-xs text-zinc-300">
+            <input
+              type="checkbox"
+              checked={!!task.deadline}
+              onChange={(e) =>
+                onChange({
+                  deadline: e.target.checked
+                    ? task.deadline ?? { basis: "creation", days: 7 }
+                    : undefined,
+                })
+              }
+              className="accent-zinc-300"
+            />
+            Enable
+          </label>
+          {task.deadline && (
+            <>
+              <select
+                value={task.deadline.basis}
+                onChange={(e) =>
+                  onChange({
+                    deadline: {
+                      basis: e.target.value as "creation" | "hard_deadline",
+                      days: task.deadline!.days,
+                    },
+                  })
+                }
+                className="h-8 px-2 rounded bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-zinc-600"
+              >
+                <option value="creation">Creation date</option>
+                <option value="hard_deadline">Hard deadline</option>
+              </select>
+              <span className="text-xs text-zinc-400">
+                {task.deadline.basis === "creation" ? "+" : "−"}
+              </span>
+              <input
+                type="number"
+                min={0}
+                value={task.deadline.days}
+                onChange={(e) =>
+                  onChange({
+                    deadline: {
+                      basis: task.deadline!.basis,
+                      days: Math.max(0, Number(e.target.value) || 0),
+                    },
+                  })
+                }
+                className="w-20 h-8 px-2 rounded bg-zinc-950 border border-zinc-800 text-xs text-zinc-200 focus:outline-none focus:border-zinc-600"
+              />
+              <span className="text-xs text-zinc-500">days</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div>
         <div className="text-xs text-zinc-500 mb-1.5">Suggested tools</div>
         <div className="flex flex-wrap gap-1.5 mb-2">
           {task.tools.map((t) => (
