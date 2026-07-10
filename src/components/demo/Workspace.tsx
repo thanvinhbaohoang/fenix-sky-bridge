@@ -222,21 +222,29 @@ function DocketEventsCard({
     };
   };
 
-  const canExpand = events.length > 4;
+  const canExpand = events.length > 3;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center px-1">
+      <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2 text-zinc-100">
           <Clock className="h-4 w-4 text-zinc-400" />
           <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-300">
             Docket events
           </h3>
         </div>
+        {canExpand && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="text-[10px] text-zinc-500 hover:text-zinc-200 px-1.5 py-0.5 rounded hover:bg-zinc-900/60 transition"
+          >
+            {expanded ? "Show less" : `Show all ${events.length}`}
+          </button>
+        )}
       </div>
       <div
-        className={`space-y-1.5 overflow-y-auto pr-0.5 transition-[max-height] duration-300 ease-out ${
-          expanded ? "max-h-[420px]" : "max-h-[280px]"
+        className={`space-y-1.5 overflow-y-auto pr-0.5 transition-[max-height] duration-300 ease-out scrollbar-thin ${
+          expanded ? "max-h-[420px]" : "max-h-[220px]"
         }`}
       >
         {events.length === 0 && (
@@ -317,14 +325,6 @@ function DocketEventsCard({
           </span>
         </div>
       </div>
-      {canExpand && (
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="w-full text-center text-[10px] text-zinc-500 hover:text-zinc-200 py-1 rounded hover:bg-zinc-900/60 transition"
-        >
-          {expanded ? "Show less" : `Show all ${events.length} events`}
-        </button>
-      )}
     </div>
   );
 }
