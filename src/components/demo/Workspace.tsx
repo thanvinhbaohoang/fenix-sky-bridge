@@ -15,6 +15,7 @@ import {
   eventColor,
   statusBanner,
   Citation,
+  getMailDate,
 } from "./data";
 import { useToast } from "@/hooks/use-toast";
 import { guessNameFromEmail } from "@/lib/name-from-email";
@@ -407,11 +408,44 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
   // reset state on app change
   useEffect(() => {
     setTab("workflow");
-    setTasks((TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t })));
+    const base = (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t }));
+    // Merge deadline overrides saved from /template
+    try {
+      if (typeof window !== "undefined") {
+        const raw = window.localStorage.getItem("fenixai.templates.v1");
+        if (raw) {
+          const parsed = JSON.parse(raw) as Record<
+            string,
+            { tasks: Task[] }
+          >;
+          const overrideTasks = parsed?.[code]?.tasks;
+          if (Array.isArray(overrideTasks)) {
+            const byId = new Map(overrideTasks.map((t) => [t.id, t]));
+            for (const t of base) {
+              const o = byId.get(t.id);
+              if (o?.deadline) t.deadline = o.deadline;
+            }
+          }
+        }
+      }
+    } catch {}
+    setTasks(base);
     setExpanded(null);
     setPanel(null);
     setScanPlayed(false);
   }, [app.appNumber, code]);
+
+  const anchorDate = useMemo(
+    () => (detected ? getMailDate(detected, app.transactions) : undefined),
+    [detected, app.transactions],
+  );
+  const hardDeadline = useMemo(() => {
+    if (!anchorDate) return undefined;
+    const months = code === "NOA" || code === "ISSUE.NTF" ? 3 : 6;
+    const d = new Date(anchorDate);
+    d.setMonth(d.getMonth() + months);
+    return d.toISOString().slice(0, 10);
+  }, [anchorDate, code]);
 
   const c = eventColor(code);
   const banner = statusBanner(code, app);
@@ -612,6 +646,8 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                   setReassigning={setReassigning}
                   onReassign={reassign}
                   onAddContact={addContact}
+                  anchorDate={anchorDate}
+                  hardDeadline={hardDeadline}
                 />
               )}
               {tab === "automation" && (
@@ -657,6 +693,63 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
 }
 
 // --- Workflow tab ---
+function computeDeadline(
+  task: Task,
+  anchorDate?: string,
+  hardDeadline?: string,
+): { date: string; formula: string } | null {
+  if (!task.deadline) return null;
+  const { basis, days } = task.deadline;
+  const anchor = basis === "creation" ? anchorDate : hardDeadline;
+  if (!anchor) return null;
+  const d = new Date(anchor);
+  d.setDate(d.getDate() + (basis === "creation" ? days : -days));
+  const iso = d.toISOString().slice(0, 10);
+  const formula =
+    basis === "creation"
+      ? `Mail date + ${days}d`
+      : `Hard deadline − ${days}d`;
+  return { date: iso, formula };
+}
+
+function DeadlineBadge({
+  task,
+  anchorDate,
+  hardDeadline,
+}: {
+  task: Task;
+  anchorDate?: string;
+  hardDeadline?: string;
+}) {
+  if (!task.deadline) return null;
+  const computed = computeDeadline(task, anchorDate, hardDeadline);
+  const label = computed
+    ? computed.date
+    : task.deadline.basis === "creation"
+      ? `+${task.deadline.days}d`
+      : `−${task.deadline.days}d`;
+  const tooltip = computed
+    ? computed.formula
+    : task.deadline.basis === "creation"
+      ? `Creation date + ${task.deadline.days} days`
+      : `Hard deadline − ${task.deadline.days} days`;
+  const overdue =
+    computed && new Date(computed.date).getTime() < Date.now();
+  return (
+    <span
+      title={tooltip}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+        overdue
+          ? "border-red-500/50 bg-red-500/15 text-red-200"
+          : "border-zinc-700 bg-zinc-800/60 text-zinc-300"
+      }`}
+    >
+      <Clock className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
+
 function WorkflowTab({
   code,
   tasks,
@@ -670,6 +763,8 @@ function WorkflowTab({
   setReassigning,
   onReassign,
   onAddContact,
+  anchorDate,
+  hardDeadline,
 }: {
   code: string;
   tasks: Task[];
@@ -683,6 +778,8 @@ function WorkflowTab({
   setReassigning: (id: string | null) => void;
   onReassign: (id: string, name: string | null) => void;
   onAddContact: (c: Contact) => void;
+  anchorDate?: string;
+  hardDeadline?: string;
 }) {
   return (
     <div>
@@ -748,6 +845,11 @@ function WorkflowTab({
                         {t.title}
                       </div>
                       <div className="flex items-center gap-2">
+                        <DeadlineBadge
+                          task={t}
+                          anchorDate={anchorDate}
+                          hardDeadline={hardDeadline}
+                        />
                         <TagBadge tag={t.tag} />
                         <motion.span
                           animate={{ rotate: isExp ? 180 : 0 }}
