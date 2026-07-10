@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app.index'
+import { Route as TaskIdRouteImport } from './routes/task.$id'
 import { Route as AppOfficeActionAnalyzerRouteImport } from './routes/app.office-action-analyzer'
 import { Route as ApiUsptoDownloadRouteImport } from './routes/api/uspto-download'
 import { Route as AppProjectIdRouteImport } from './routes/app.project.$id'
@@ -55,6 +56,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const TaskIdRoute = TaskIdRouteImport.update({
+  id: '/task/$id',
+  path: '/task/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppOfficeActionAnalyzerRoute = AppOfficeActionAnalyzerRouteImport.update({
   id: '/office-action-analyzer',
   path: '/office-action-analyzer',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/template': typeof TemplateRoute
   '/api/uspto-download': typeof ApiUsptoDownloadRoute
   '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
+  '/task/$id': typeof TaskIdRoute
   '/app/': typeof AppIndexRoute
   '/app/project/$id': typeof AppProjectIdRoute
 }
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/template': typeof TemplateRoute
   '/api/uspto-download': typeof ApiUsptoDownloadRoute
   '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
+  '/task/$id': typeof TaskIdRoute
   '/app': typeof AppIndexRoute
   '/app/project/$id': typeof AppProjectIdRoute
 }
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/template': typeof TemplateRoute
   '/api/uspto-download': typeof ApiUsptoDownloadRoute
   '/app/office-action-analyzer': typeof AppOfficeActionAnalyzerRoute
+  '/task/$id': typeof TaskIdRoute
   '/app/': typeof AppIndexRoute
   '/app/project/$id': typeof AppProjectIdRoute
 }
@@ -118,6 +127,7 @@ export interface FileRouteTypes {
     | '/template'
     | '/api/uspto-download'
     | '/app/office-action-analyzer'
+    | '/task/$id'
     | '/app/'
     | '/app/project/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/template'
     | '/api/uspto-download'
     | '/app/office-action-analyzer'
+    | '/task/$id'
     | '/app'
     | '/app/project/$id'
   id:
@@ -141,6 +152,7 @@ export interface FileRouteTypes {
     | '/template'
     | '/api/uspto-download'
     | '/app/office-action-analyzer'
+    | '/task/$id'
     | '/app/'
     | '/app/project/$id'
   fileRoutesById: FileRoutesById
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   ProjectRoute: typeof ProjectRoute
   TemplateRoute: typeof TemplateRoute
   ApiUsptoDownloadRoute: typeof ApiUsptoDownloadRoute
+  TaskIdRoute: typeof TaskIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/task/$id': {
+      id: '/task/$id'
+      path: '/task/$id'
+      fullPath: '/task/$id'
+      preLoaderRoute: typeof TaskIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app/office-action-analyzer': {
       id: '/app/office-action-analyzer'
       path: '/office-action-analyzer'
@@ -252,6 +272,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectRoute: ProjectRoute,
   TemplateRoute: TemplateRoute,
   ApiUsptoDownloadRoute: ApiUsptoDownloadRoute,
+  TaskIdRoute: TaskIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

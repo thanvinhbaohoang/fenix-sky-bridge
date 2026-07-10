@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   APPS,
   AppData,
@@ -648,6 +649,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                   onAddContact={addContact}
                   anchorDate={anchorDate}
                   hardDeadline={hardDeadline}
+                  appNumber={app.appNumber}
                 />
               )}
               {tab === "automation" && (
@@ -765,6 +767,7 @@ function WorkflowTab({
   onAddContact,
   anchorDate,
   hardDeadline,
+  appNumber,
 }: {
   code: string;
   tasks: Task[];
@@ -780,6 +783,7 @@ function WorkflowTab({
   onAddContact: (c: Contact) => void;
   anchorDate?: string;
   hardDeadline?: string;
+  appNumber?: string;
 }) {
   return (
     <div>
@@ -891,6 +895,15 @@ function WorkflowTab({
                           onClose={() => setReassigning(null)}
                         />
                       )}
+                      <Link
+                        to="/task/$id"
+                        params={{ id: t.id }}
+                        search={{ app: appNumber, event: code }}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        className="ml-auto text-[10px] px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500 inline-flex items-center gap-1"
+                      >
+                        Open details →
+                      </Link>
                     </div>
                   </div>
                 </div>
