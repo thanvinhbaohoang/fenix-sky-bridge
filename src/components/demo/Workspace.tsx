@@ -788,6 +788,11 @@ function WorkflowTab({
                         {t.title}
                       </div>
                       <div className="flex items-center gap-2">
+                        <DeadlineBadge
+                          task={t}
+                          anchorDate={anchorDate}
+                          hardDeadline={hardDeadline}
+                        />
                         <TagBadge tag={t.tag} />
                         <motion.span
                           animate={{ rotate: isExp ? 180 : 0 }}
