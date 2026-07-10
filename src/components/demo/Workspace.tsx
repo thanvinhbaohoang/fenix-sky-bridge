@@ -200,6 +200,8 @@ function DocketEventsCard({
   activeKey: string;
   onSelect: (key: string) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+
   // Read persisted done state so the sidebar reflects progress in real time.
   // We deliberately re-read on every render — the store is tiny and this
   // avoids stale status right after a checkbox toggle.
@@ -220,6 +222,61 @@ function DocketEventsCard({
     };
   };
 
+  const activeEvent = events.find((ev) => ev.key === activeKey) ?? events[events.length - 1];
+  const hasMore = events.length > 1;
+
+  const renderEvent = (ev: DocketEvent, isActive: boolean) => {
+    const status = statusFor(ev.key, ev.code);
+    const dot =
+      status.tone === "done"
+        ? "bg-emerald-400"
+        : status.tone === "open"
+          ? "bg-blue-400"
+          : status.tone === "idle"
+            ? "bg-zinc-500"
+            : "bg-zinc-600";
+    return (
+      <button
+        key={ev.key}
+        onClick={() => onSelect(ev.key)}
+        className={`group w-full text-left rounded-lg border p-2 flex items-start gap-2.5 transition ${
+          isActive
+            ? "border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/40"
+            : "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60"
+        }`}
+      >
+        <span
+          className={`mt-0.5 inline-flex items-center justify-center w-12 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${eventColor(ev.code).bg} ${eventColor(ev.code).text} ${eventColor(ev.code).border}`}
+        >
+          {ev.badge}
+        </span>
+        <span className="flex-1 min-w-0 leading-tight">
+          <div className={`text-[11px] font-semibold truncate ${isActive ? "text-zinc-100" : "text-zinc-300"}`}>
+            {ev.label}
+          </div>
+          <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+            {ev.date}
+            {isActive && <span className="ml-1 text-blue-300">· active</span>}
+          </div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className={`inline-block h-1.5 w-1.5 rounded-full ${dot}`} />
+            <span
+              className={`text-[10px] ${
+                status.tone === "done"
+                  ? "text-emerald-300"
+                  : status.tone === "open"
+                    ? "text-blue-300"
+                    : "text-zinc-500"
+              }`}
+            >
+              {status.text}
+            </span>
+          </div>
+        </span>
+      </button>
+    );
+  };
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-zinc-100 px-1">
@@ -228,64 +285,30 @@ function DocketEventsCard({
           Docket events
         </h3>
       </div>
-      <div className="max-h-[220px] overflow-y-auto scrollbar-thin pr-0.5 space-y-1.5">
+
+      <div className="space-y-1.5">
         {events.length === 0 && (
           <p className="text-[11px] text-zinc-500 px-1">
             No docket events yet.
           </p>
         )}
-        {events.map((ev) => {
-          const isActive = ev.key === activeKey;
-          const status = statusFor(ev.key, ev.code);
-          const dot =
-            status.tone === "done"
-              ? "bg-emerald-400"
-              : status.tone === "open"
-                ? "bg-blue-400"
-                : status.tone === "idle"
-                  ? "bg-zinc-500"
-                  : "bg-zinc-600";
-          return (
-            <button
-              key={ev.key}
-              onClick={() => onSelect(ev.key)}
-              className={`group w-full text-left rounded-lg border p-2 flex items-start gap-2.5 transition ${
-                isActive
-                  ? "border-blue-500 bg-blue-500/10 ring-1 ring-blue-500/40"
-                  : "border-zinc-800 bg-zinc-900/30 hover:border-zinc-700 hover:bg-zinc-900/60"
-              }`}
-            >
-              <span
-                className={`mt-0.5 inline-flex items-center justify-center w-12 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${eventColor(ev.code).bg} ${eventColor(ev.code).text} ${eventColor(ev.code).border}`}
-              >
-                {ev.badge}
-              </span>
-              <span className="flex-1 min-w-0 leading-tight">
-                <div className={`text-[11px] font-semibold truncate ${isActive ? "text-zinc-100" : "text-zinc-300"}`}>
-                  {ev.label}
-                </div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                  {ev.date}
-                  {isActive && <span className="ml-1 text-blue-300">· active</span>}
-                </div>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <span className={`inline-block h-1.5 w-1.5 rounded-full ${dot}`} />
-                  <span
-                    className={`text-[10px] ${
-                      status.tone === "done"
-                        ? "text-emerald-300"
-                        : status.tone === "open"
-                          ? "text-blue-300"
-                          : "text-zinc-500"
-                    }`}
-                  >
-                    {status.text}
-                  </span>
-                </div>
-              </span>
-            </button>
-          );
-        })}
+
+        {!expanded && activeEvent && renderEvent(activeEvent, true)}
+
+        {expanded && (
+          <div className="max-h-[220px] overflow-y-auto scrollbar-thin pr-0.5 space-y-1.5">
+            {events.map((ev) => renderEvent(ev, ev.key === activeKey))}
+          </div>
+        )}
+
+        {hasMore && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="w-full text-center text-[10px] text-zinc-400 hover:text-zinc-200 py-1 rounded border border-dashed border-zinc-700 hover:border-zinc-500 transition"
+          >
+            {expanded ? "View less" : "View more"}
+          </button>
+        )}
       </div>
     </div>
   );
