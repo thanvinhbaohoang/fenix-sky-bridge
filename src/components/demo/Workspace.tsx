@@ -829,7 +829,6 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
                   setSelectedKey(key);
                   setTab("workflow");
                 }}
-                onViewHistory={() => setTab("history")}
               />
             </SidebarFooter>
           </Sidebar>
