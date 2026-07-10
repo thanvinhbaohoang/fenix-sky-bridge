@@ -693,6 +693,63 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
 }
 
 // --- Workflow tab ---
+function computeDeadline(
+  task: Task,
+  anchorDate?: string,
+  hardDeadline?: string,
+): { date: string; formula: string } | null {
+  if (!task.deadline) return null;
+  const { basis, days } = task.deadline;
+  const anchor = basis === "creation" ? anchorDate : hardDeadline;
+  if (!anchor) return null;
+  const d = new Date(anchor);
+  d.setDate(d.getDate() + (basis === "creation" ? days : -days));
+  const iso = d.toISOString().slice(0, 10);
+  const formula =
+    basis === "creation"
+      ? `Mail date + ${days}d`
+      : `Hard deadline − ${days}d`;
+  return { date: iso, formula };
+}
+
+function DeadlineBadge({
+  task,
+  anchorDate,
+  hardDeadline,
+}: {
+  task: Task;
+  anchorDate?: string;
+  hardDeadline?: string;
+}) {
+  if (!task.deadline) return null;
+  const computed = computeDeadline(task, anchorDate, hardDeadline);
+  const label = computed
+    ? computed.date
+    : task.deadline.basis === "creation"
+      ? `+${task.deadline.days}d`
+      : `−${task.deadline.days}d`;
+  const tooltip = computed
+    ? computed.formula
+    : task.deadline.basis === "creation"
+      ? `Creation date + ${task.deadline.days} days`
+      : `Hard deadline − ${task.deadline.days} days`;
+  const overdue =
+    computed && new Date(computed.date).getTime() < Date.now();
+  return (
+    <span
+      title={tooltip}
+      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+        overdue
+          ? "border-red-500/50 bg-red-500/15 text-red-200"
+          : "border-zinc-700 bg-zinc-800/60 text-zinc-300"
+      }`}
+    >
+      <Clock className="h-3 w-3" />
+      {label}
+    </span>
+  );
+}
+
 function WorkflowTab({
   code,
   tasks,
