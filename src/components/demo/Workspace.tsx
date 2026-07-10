@@ -1783,6 +1783,39 @@ function OverviewTab({ app }: { app: AppData }) {
           </div>
         )}
       </section>
+
+      <section>
+        <h3 className="text-xs uppercase tracking-wider text-zinc-500 mb-2">
+          Transactions ({app.transactions.length})
+        </h3>
+        {app.transactions.length === 0 ? (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 text-xs text-zinc-500">
+            No transactions available for this application.
+          </div>
+        ) : (
+          <div className="rounded-lg border border-zinc-800 overflow-hidden">
+            <div className="divide-y divide-zinc-800">
+              {[...app.transactions]
+                .sort((a, b) => (a.date < b.date ? 1 : -1))
+                .map((t) => {
+                  const c = eventColor(t.code);
+                  return (
+                    <div
+                      key={`${t.code}-${t.date}`}
+                      className="flex items-center gap-3 px-4 py-2.5 text-xs hover:bg-zinc-900/40 transition"
+                    >
+                      <CodeBadge code={t.code} />
+                      <span className="flex-1 text-zinc-300 truncate">
+                        {t.description}
+                      </span>
+                      <span className="font-mono text-zinc-500 shrink-0">{t.date}</span>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
