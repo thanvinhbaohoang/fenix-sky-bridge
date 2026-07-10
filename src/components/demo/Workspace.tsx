@@ -899,7 +899,7 @@ function WorkflowTab({
                         to="/task/$id"
                         params={{ id: t.id }}
                         search={{ app: appNumber, event: code }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
                         className="ml-auto text-[10px] px-2 py-0.5 rounded-full border border-zinc-700 text-zinc-400 hover:text-zinc-100 hover:border-zinc-500 inline-flex items-center gap-1"
                       >
                         Open details →
