@@ -766,6 +766,7 @@ function WorkflowTab({
   onAddContact,
   anchorDate,
   hardDeadline,
+  appNumber,
 }: {
   code: string;
   tasks: Task[];
@@ -781,6 +782,7 @@ function WorkflowTab({
   onAddContact: (c: Contact) => void;
   anchorDate?: string;
   hardDeadline?: string;
+  appNumber?: string;
 }) {
   return (
     <div>
