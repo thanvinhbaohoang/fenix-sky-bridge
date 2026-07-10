@@ -314,8 +314,23 @@ function StepNum({ n }: { n: number }) {
 }
 
 export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () => void }) {
-  const detected = useMemo(() => detectEvent(app.transactions), [app]);
+  const autoDetected = useMemo(() => detectEvent(app.transactions), [app]);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+
+  // Reset the pinned event whenever the application changes.
+  useEffect(() => {
+    setSelectedKey(null);
+  }, [app.appNumber]);
+
+  const detected = useMemo(() => {
+    if (!selectedKey) return autoDetected;
+    const [c, d] = selectedKey.split("|");
+    return (
+      app.transactions.find((t) => t.code === c && t.date === d) ?? autoDetected
+    );
+  }, [selectedKey, autoDetected, app.transactions]);
   const code = detected?.code ?? "";
+  const activeKey = detected ? `${detected.code}|${detected.date}` : "";
   const [tab, setTab] = useState<Tab>("workflow");
   const [tasks, setTasks] = useState<Task[]>(() => (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t })));
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -437,11 +452,31 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
         }
       }
     } catch {}
+    // Merge persisted "done" state for this (app, docket event)
+    try {
+      const doneIds = loadProjectDone(app.appNumber, activeKey);
+      if (doneIds.length) {
+        const doneSet = new Set(doneIds);
+        for (const t of base) t.done = doneSet.has(t.id);
+      }
+    } catch {}
     setTasks(base);
     setExpanded(null);
     setPanel(null);
     setScanPlayed(false);
-  }, [app.appNumber, code]);
+  }, [app.appNumber, code, activeKey]);
+
+  // Persist "done" state per (app, docket event) so status shows in the sidebar.
+  useEffect(() => {
+    if (!activeKey) return;
+    const doneIds = tasks.filter((t) => t.done).map((t) => t.id);
+    saveProjectDone(app.appNumber, activeKey, doneIds);
+  }, [tasks, app.appNumber, activeKey]);
+
+  const docketEvents = useMemo(
+    () => buildDocketEvents(app.transactions),
+    [app.transactions],
+  );
 
   const anchorDate = useMemo(
     () => (detected ? getMailDate(detected, app.transactions) : undefined),
@@ -563,40 +598,16 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
             </SidebarContent>
 
             <SidebarFooter className="p-3 border-t border-zinc-800">
-              <Card
-                onClick={() => setTab("history")}
-                className="group cursor-pointer rounded-xl border border-zinc-800 bg-zinc-900/40 text-zinc-100 p-3 hover:border-zinc-600 hover:bg-zinc-900/60 transition"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 text-zinc-100">
-                    <Clock className="h-4 w-4 text-zinc-400" />
-                    <h3 className="text-xs font-semibold">Recent transactions</h3>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-zinc-300 transition" />
-                </div>
-                <div className="mt-2.5 space-y-2">
-                  {app.transactions.slice(0, 4).map((t, i) => {
-                    const c = eventColor(t.code);
-                    return (
-                      <div key={i} className="flex items-start gap-2.5 text-[11px]">
-                        <span className={`mt-0.5 inline-flex items-center justify-center w-10 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${c.bg} ${c.text} ${c.border}`}>
-                          {t.code}
-                        </span>
-                        <div className="flex-1 min-w-0 leading-tight">
-                          <div className="text-zinc-300 truncate">{t.description}</div>
-                          <div className="text-zinc-500 font-mono mt-0.5">{t.date}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {app.transactions.length === 0 && (
-                    <p className="text-[11px] text-zinc-500">No transactions found.</p>
-                  )}
-                </div>
-                <div className="mt-3 flex items-center gap-1 text-[11px] font-medium text-zinc-400 group-hover:text-zinc-200 transition">
-                  View full history <ChevronRight className="h-3 w-3" />
-                </div>
-              </Card>
+              <DocketEventsCard
+                events={docketEvents}
+                appNumber={app.appNumber}
+                activeKey={activeKey}
+                onSelect={(key) => {
+                  setSelectedKey(key);
+                  setTab("workflow");
+                }}
+                onViewHistory={() => setTab("history")}
+              />
             </SidebarFooter>
           </Sidebar>
 
