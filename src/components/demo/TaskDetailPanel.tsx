@@ -170,7 +170,7 @@ export function TaskDetailPanel({
 
   const requireAuth = () => {
     if (!session) {
-      alert("Please sign in to comment or upload files.");
+      alert("Please sign in to comment.");
       return false;
     }
     return true;
@@ -360,62 +360,10 @@ export function TaskDetailPanel({
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="border border-zinc-800 rounded-lg bg-zinc-900/40 p-4">
-              <div className="flex items-center gap-2 mb-2 text-xs text-zinc-400">
-                <LinkIcon className="h-3.5 w-3.5" /> Attach link
-              </div>
-              <input
-                value={linkLabel}
-                onChange={(e) => setLinkLabel(e.target.value)}
-                placeholder="Label (optional)"
-                maxLength={200}
-                className="w-full h-8 mb-2 px-2 rounded bg-zinc-950 border border-zinc-800 text-sm focus:outline-none focus:border-zinc-600"
-              />
-              <input
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder="https://…"
-                maxLength={500}
-                className="w-full h-8 mb-2 px-2 rounded bg-zinc-950 border border-zinc-800 text-sm font-mono focus:outline-none focus:border-zinc-600"
-              />
-              <button
-                onClick={addLink}
-                disabled={!linkUrl.trim()}
-                className="h-8 px-3 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
-              >
-                Add link
-              </button>
-            </div>
-
-            <div className="border border-zinc-800 rounded-lg bg-zinc-900/40 p-4">
-              <div className="flex items-center gap-2 mb-2 text-xs text-zinc-400">
-                <Paperclip className="h-3.5 w-3.5" /> Attach file
-              </div>
-              <input
-                ref={fileRef}
-                type="file"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) uploadFile(f);
-                }}
-                disabled={uploading}
-                className="text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-zinc-800 file:text-zinc-200 file:text-xs hover:file:bg-zinc-700"
-              />
-              {uploading && (
-                <div className="text-xs text-zinc-500 mt-2 flex items-center gap-1.5">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Uploading…
-                </div>
-              )}
-              <p className="text-[10px] text-zinc-600 mt-2">
-                Max 20 MB. Visible to teammates in your email domain.
-              </p>
-            </div>
-          </div>
         </section>
       ) : (
         <div className="border border-zinc-800 rounded-lg p-4 bg-zinc-900/40 text-sm text-zinc-400">
-          Sign in to comment, attach files, or update this task.
+          Sign in to comment or update this task.
         </div>
       )}
     </div>
