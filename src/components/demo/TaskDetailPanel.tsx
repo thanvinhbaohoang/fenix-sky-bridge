@@ -91,10 +91,6 @@ export function TaskDetailPanel({
   const [status, setStatus] = useState<"open" | "closed">("open");
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [linkLabel, setLinkLabel] = useState("");
-  const [linkUrl, setLinkUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   const [profileCache, setProfileCache] = useState<
     Record<string, { name: string | null; email: string | null; avatar: string | null }>
   >({});
