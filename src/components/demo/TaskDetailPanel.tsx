@@ -208,43 +208,6 @@ export function TaskDetailPanel({
     setStatus(next === "closed" ? "closed" : "open");
   };
 
-  const addLink = async () => {
-    if (!requireAuth() || !linkUrl.trim()) return;
-    try {
-      new URL(linkUrl);
-    } catch {
-      alert("Invalid URL");
-      return;
-    }
-    await insertActivity("link_added", linkLabel.trim() || null, {
-      url: linkUrl.trim(),
-      label: linkLabel.trim() || linkUrl.trim(),
-    });
-    setLinkUrl("");
-    setLinkLabel("");
-  };
-
-  const uploadFile = async (file: File) => {
-    if (!requireAuth() || !session) return;
-    if (file.size > 20 * 1024 * 1024) {
-      alert("File too large (max 20 MB).");
-      return;
-    }
-    setUploading(true);
-    const path = `${session.userId}/${taskKey.replace(/[^a-zA-Z0-9-_./]/g, "_")}/${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage
-      .from("task-attachments")
-      .upload(path, file, { upsert: false });
-    if (error) alert(error.message);
-    else
-      await insertActivity("attachment_added", file.name, {
-        path,
-        size: file.size,
-        type: file.type,
-      });
-    setUploading(false);
-    if (fileRef.current) fileRef.current.value = "";
-  };
 
   const downloadAttachment = async (path: string, filename: string) => {
     const { data, error } = await supabase.storage
