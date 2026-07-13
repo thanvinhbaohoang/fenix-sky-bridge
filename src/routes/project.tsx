@@ -158,16 +158,6 @@ function ProjectPage() {
     );
   }
 
-  if (phase < 6) {
-    return (
-      <ReadyState
-        appNumber={rawApp}
-        app={partial!}
-        onContinue={() => setPhase(6)}
-      />
-    );
-  }
-
   const appData = toAppData(
     appQuery.data,
     txQuery.data,
