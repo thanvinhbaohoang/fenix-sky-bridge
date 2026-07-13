@@ -567,7 +567,6 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
   const [tasks, setTasks] = useState<Task[]>(() => (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t })));
   const [expanded, setExpanded] = useState<string | null>(null);
   const [panel, setPanel] = useState<{ tool: string; task: Task } | null>(null);
-  const [scanPlayed, setScanPlayed] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reassigning, setReassigning] = useState<string | null>(null);
   const { toast } = useToast();
