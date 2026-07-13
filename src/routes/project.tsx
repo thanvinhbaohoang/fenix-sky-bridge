@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Workspace } from "@/components/demo/Workspace";
 import { SaveProjectNudge } from "@/components/SaveProjectNudge";
@@ -165,6 +165,20 @@ function AppNumberPrompt({ onSubmit }: { onSubmit: (v: string) => void }) {
 }
 
 function LoadingState({ appNumber }: { appNumber: string }) {
+  const messages = [
+    "Fetching application data…",
+    "Scanning prosecution history for docketable events…",
+    "Identifying most recent docketable event…",
+    "Preparing workspace…",
+  ];
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(
+      () => setIdx((i) => Math.min(i + 1, messages.length - 1)),
+      450,
+    );
+    return () => clearInterval(id);
+  }, [messages.length]);
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="h-14 border-b border-zinc-800 flex items-center px-4">
@@ -183,11 +197,31 @@ function LoadingState({ appNumber }: { appNumber: string }) {
           <div className="h-3 w-1/2 bg-zinc-800 rounded animate-pulse" />
           <div className="h-3 w-3/4 bg-zinc-800 rounded animate-pulse" />
         </aside>
-        <main className="flex-1 p-6 space-y-3">
-          <div className="h-6 w-64 bg-zinc-800 rounded animate-pulse" />
-          <div className="h-24 bg-zinc-900 border border-zinc-800 rounded animate-pulse" />
-          <div className="h-24 bg-zinc-900 border border-zinc-800 rounded animate-pulse" />
-          <div className="h-24 bg-zinc-900 border border-zinc-800 rounded animate-pulse" />
+        <main className="flex-1 p-6">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 font-mono text-[12px] leading-6 max-w-2xl">
+            <div className="text-zinc-500 mb-2">
+              Application {appNumber || "—"}
+            </div>
+            {messages.slice(0, idx + 1).map((m, i) => {
+              const isCurrent = i === idx;
+              return (
+                <div
+                  key={i}
+                  className={
+                    isCurrent ? "text-zinc-200" : "text-emerald-400"
+                  }
+                >
+                  {isCurrent ? (
+                    <span className="inline-block animate-pulse">▸</span>
+                  ) : (
+                    "✓"
+                  )}
+                  {"  "}
+                  {m}
+                </div>
+              );
+            })}
+          </div>
         </main>
       </div>
     </div>

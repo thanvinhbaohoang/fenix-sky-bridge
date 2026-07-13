@@ -567,7 +567,6 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
   const [tasks, setTasks] = useState<Task[]>(() => (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t })));
   const [expanded, setExpanded] = useState<string | null>(null);
   const [panel, setPanel] = useState<{ tool: string; task: Task } | null>(null);
-  const [scanPlayed, setScanPlayed] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reassigning, setReassigning] = useState<string | null>(null);
   const { toast } = useToast();
@@ -695,7 +694,6 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
     setTasks(base);
     setExpanded(null);
     setPanel(null);
-    setScanPlayed(false);
   }, [app.appNumber, code, activeKey]);
 
   // Persist "done" state per (app, docket event) so status shows in the sidebar.
@@ -912,12 +910,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
                 />
               )}
               {tab === "automation" && (
-                <AutomationTab
-                  app={app}
-                  code={code}
-                  played={scanPlayed}
-                  onPlayed={() => setScanPlayed(true)}
-                />
+                <AutomationTab app={app} code={code} />
               )}
               {tab === "project" && (
                 <ProjectTab
@@ -1230,40 +1223,13 @@ function WorkflowTab({
 function AutomationTab({
   app,
   code,
-  played,
-  onPlayed,
 }: {
   app: AppData;
   code: string;
-  played: boolean;
-  onPlayed: () => void;
 }) {
-  const [shown, setShown] = useState<number>(played ? app.transactions.length : 0);
-  const [showSelected, setShowSelected] = useState<boolean>(played);
-  const [showCard, setShowCard] = useState<boolean>(played);
   const [emailOpen, setEmailOpen] = useState(false);
   const [formsOpen, setFormsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const startedRef = useRef(played);
-
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-    let i = 0;
-    const tick = () => {
-      i += 1;
-      setShown(i);
-      if (i < app.transactions.length) setTimeout(tick, 150);
-      else {
-        setTimeout(() => setShowSelected(true), 250);
-        setTimeout(() => {
-          setShowCard(true);
-          onPlayed();
-        }, 700);
-      }
-    };
-    setTimeout(tick, 200);
-  }, [app.transactions.length, onPlayed]);
 
   const c = eventColor(code);
   const winner = detectEvent(app.transactions);
@@ -1278,49 +1244,11 @@ function AutomationTab({
 
   return (
     <div className="space-y-8">
-      {/* Step 1 — Scan */}
-      <section>
-        <div className="flex items-center gap-2 mb-3">
-          <StepNum n={1} />
-          <h3 className="text-sm font-medium">Scanning prosecution history for docketable events</h3>
-        </div>
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 font-mono text-[12px] text-zinc-400 leading-6">
-          <div className="text-zinc-500 mb-2">
-            Checking {app.transactions.length} transactions against event list: {DOCKETABLE.join(", ")}
-          </div>
-          {app.transactions.slice(0, shown).map((t, i) => {
-            const isDock = DOCKETABLE.includes(t.code);
-            const isWinner = winner && t.code === winner.code && t.date === winner.date;
-            return (
-              <div
-                key={i}
-                className={
-                  isWinner && showSelected
-                    ? "text-emerald-400"
-                    : isDock
-                    ? "text-zinc-200"
-                    : "text-zinc-600"
-                }
-              >
-                {isWinner && showSelected ? "★" : isDock ? "✓" : "·"}{"  "}
-                {t.date}  [{t.code}]  {t.description}
-                {isWinner && showSelected && <span className="ml-2 text-emerald-500">← selected</span>}
-              </div>
-            );
-          })}
-          {showCard && winner && (
-            <div className="mt-3 text-emerald-400">
-              ✓ Most recent docketable event: {winner.code} on {winner.date}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Step 2 — Detected event card */}
-      {showCard && winner && (
+      {/* Step 1 — Detected event card */}
+      {winner && (
         <section className="animate-in fade-in duration-300">
           <div className="flex items-center gap-2 mb-3">
-            <StepNum n={2} />
+            <StepNum n={1} />
             <h3 className="text-sm font-medium">Event identified — actions available</h3>
           </div>
           <div className={`rounded-lg border ${c.border} ${c.tint} p-4 flex items-start gap-4`}>
@@ -1354,11 +1282,11 @@ function AutomationTab({
         </section>
       )}
 
-      {/* Step 3 — Email */}
+      {/* Step 2 — Email */}
       {emailOpen && (
         <section className="animate-in fade-in duration-300">
           <div className="flex items-center gap-2 mb-3">
-            <StepNum n={3} />
+            <StepNum n={2} />
             <h3 className="text-sm font-medium">Generated client email</h3>
           </div>
           <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 overflow-hidden">
@@ -1379,11 +1307,11 @@ function AutomationTab({
         </section>
       )}
 
-      {/* Step 4 — Forms */}
+      {/* Step 3 — Forms */}
       {formsOpen && (
         <section className="animate-in fade-in duration-300">
           <div className="flex items-center gap-2 mb-3">
-            <StepNum n={4} />
+            <StepNum n={3} />
             <h3 className="text-sm font-medium">Suggested forms for {code}</h3>
           </div>
           <div className="grid grid-cols-2 gap-3">
