@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Workspace } from "@/components/demo/Workspace";
 import { SaveProjectNudge } from "@/components/SaveProjectNudge";
@@ -10,6 +10,7 @@ import {
   fetchUsptoTransactions,
 } from "@/lib/uspto.functions";
 import { toAppData } from "@/lib/uspto-mapping";
+import { DOCKETABLE, detectEvent, type AppData } from "@/components/demo/data";
 
 const searchSchema = z.object({
   app: z.string().optional(),
@@ -78,16 +79,23 @@ function ProjectPage() {
     });
   };
 
+  const [scanDone, setScanDone] = useState(false);
+  // Reset scan when the app number changes.
+  useEffect(() => {
+    setScanDone(false);
+  }, [cleanApp]);
+
   if (!cleanApp) {
     return <AppNumberPrompt onSubmit={goToApp} />;
   }
 
-  if (appQuery.isLoading || txQuery.isLoading) {
-    return <LoadingState appNumber={rawApp} />;
-  }
-
   const err = appQuery.error || txQuery.error;
   if (err || !appQuery.data) {
+    if (appQuery.isLoading || txQuery.isLoading) {
+      return (
+        <TerminalScan appNumber={rawApp} app={null} onDone={() => {}} />
+      );
+    }
     return (
       <ErrorState
         message={(err as Error | null)?.message ?? "Failed to load application."}
@@ -107,6 +115,16 @@ function ProjectPage() {
     template,
     docsQuery.data,
   );
+
+  if (!scanDone) {
+    return (
+      <TerminalScan
+        appNumber={rawApp}
+        app={appData}
+        onDone={() => setScanDone(true)}
+      />
+    );
+  }
 
   return (
     <>
