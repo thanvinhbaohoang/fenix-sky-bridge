@@ -110,7 +110,7 @@ function ProjectPage() {
 
   return (
     <>
-      <Workspace app={appData} onChangeApp={() => goToApp("")} />
+      <Workspace app={appData} onChangeApp={(next) => goToApp(next ?? "")} />
       <SaveProjectNudge
         applicationNumber={appData.appNumber || cleanApp}
         title={appData.title}
