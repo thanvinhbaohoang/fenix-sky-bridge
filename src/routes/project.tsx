@@ -226,20 +226,38 @@ function LoadingState({
   appNumber,
   phase,
   app,
+  onContinue,
 }: {
   appNumber: string;
   phase: number;
   app: ReturnType<typeof toAppData> | null;
+  onContinue: () => void;
 }) {
   const detected = app ? detectEvent(app.transactions) : undefined;
-  const steps = [
-    { label: "Fetching application data…", done: phase >= 1 },
-    { label: "Loading application details…", done: phase >= 2 },
-    { label: "Scanning prosecution history…", done: phase >= 3 },
-    { label: "Detecting docketable event…", done: phase >= 4 },
-    { label: "Opening workspace…", done: phase >= 5 },
-  ];
-  const currentIdx = steps.findIndex((s) => !s.done);
+
+  // 10-second countdown once everything is ready.
+  const ready = phase >= 5;
+  const [countdown, setCountdown] = useState(10);
+  useEffect(() => {
+    if (!ready) return;
+    setCountdown(10);
+    const iv = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(iv);
+          onContinue();
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(iv);
+  }, [ready, onContinue]);
+
+  // Build a small "docketable timeline" for the scan card, highlighting
+  // the selected event and marking superseded / administrative rows.
+  const timeline = buildDocketableTimeline(app?.transactions ?? [], detected?.code);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="h-14 border-b border-zinc-800 flex items-center px-4">
@@ -248,101 +266,249 @@ function LoadingState({
         </div>
         <span className="ml-2 font-semibold tracking-tight">FenixAI</span>
         <span className="ml-auto font-mono text-xs text-zinc-500">
-          Loading {appNumber}…
+          {ready ? `Ready · ${appNumber}` : `Loading ${appNumber}…`}
         </span>
       </div>
+
       <main className="max-w-3xl mx-auto p-6 space-y-4">
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 font-mono text-[12px] leading-6">
-          <div className="text-zinc-500 mb-2">
-            Application {appNumber || "—"}
-          </div>
-          {steps.map((s, i) => {
-            const isCurrent = i === currentIdx;
-            const isDone = s.done;
-            return (
-              <div
-                key={i}
-                className={
-                  isDone
-                    ? "text-emerald-400"
-                    : isCurrent
-                      ? "text-zinc-200"
-                      : "text-zinc-600"
-                }
-              >
-                {isDone ? "✓" : isCurrent ? (
-                  <span className="inline-block animate-pulse">▸</span>
-                ) : "·"}
-                {"  "}
-                {s.label}
+        {/* Application header card */}
+        <div
+          className={
+            "rounded-xl border p-5 transition-all duration-500 " +
+            (phase >= 1
+              ? "border-emerald-700/60 bg-emerald-950/30 animate-in fade-in slide-in-from-bottom-2"
+              : "border-zinc-800 bg-zinc-900/40")
+          }
+        >
+          {phase < 1 ? (
+            <div className="flex items-center gap-3">
+              <ScanLine className="h-4 w-4 text-zinc-400 animate-pulse" />
+              <div className="text-sm text-zinc-300">
+                Fetching application {appNumber || "—"}…
               </div>
-            );
-          })}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-emerald-400 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-emerald-300 font-semibold text-[15px] truncate">
+                    {app?.title || "Application found"}
+                  </div>
+                </div>
+                <div className="text-[11px] font-mono text-emerald-300/80 whitespace-nowrap">
+                  {app?.appNumber}
+                  {app?.assignee && app.assignee !== "—" ? ` · ${app.assignee}` : ""}
+                  {app?.artUnit && app.artUnit !== "—" ? ` · Art Unit ${app.artUnit}` : ""}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-6 mt-4 pl-8">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                    Examiner
+                  </div>
+                  <div className="text-sm text-zinc-100 mt-0.5">
+                    {app?.examiner || "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+                    Filed
+                  </div>
+                  <div className="text-sm text-zinc-100 mt-0.5 font-mono">
+                    {app?.filingDate || "—"}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
-        {phase >= 1 && app && (
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">
-              Application details
+        {/* Scanning prosecution history card */}
+        {phase >= 2 && (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-3">
+              <div className="h-7 w-7 rounded-md bg-zinc-800/80 flex items-center justify-center">
+                <ScanLine
+                  className={
+                    "h-4 w-4 text-zinc-300 " +
+                    (phase < 3 ? "animate-pulse" : "")
+                  }
+                />
+              </div>
+              <div className="text-[15px] font-semibold text-zinc-100">
+                {phase < 3
+                  ? "Scanning prosecution history…"
+                  : "Scanning prosecution history"}
+              </div>
+              {phase >= 3 && detected && (
+                <div className="ml-auto text-[11px] font-mono px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-950 font-semibold flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  {detected.code} selected
+                </div>
+              )}
             </div>
-            <div className="text-sm font-semibold text-zinc-100 mb-2">
-              {app.title}
+
+            <div className="mt-4 space-y-2">
+              {phase < 3 && (
+                <>
+                  <SkeletonRow />
+                  <SkeletonRow />
+                  <SkeletonRow />
+                </>
+              )}
+              {phase >= 3 &&
+                timeline.map((row, i) => (
+                  <TimelineRow key={i} row={row} />
+                ))}
+              {phase >= 3 && timeline.length === 0 && (
+                <div className="text-xs text-zinc-500 py-2">
+                  No docketable events found in prosecution history.
+                </div>
+              )}
             </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-              <dt className="text-zinc-500">App No.</dt>
-              <dd className="font-mono text-zinc-200">{app.appNumber}</dd>
-              <dt className="text-zinc-500">Filed</dt>
-              <dd className="text-zinc-200">{app.filingDate || "—"}</dd>
-              <dt className="text-zinc-500">Applicant</dt>
-              <dd className="text-zinc-200 truncate">{app.assignee}</dd>
-              <dt className="text-zinc-500">Examiner</dt>
-              <dd className="text-zinc-200 truncate">{app.examiner}</dd>
-              <dt className="text-zinc-500">Art Unit</dt>
-              <dd className="text-zinc-200">{app.artUnit}</dd>
-              <dt className="text-zinc-500">Status</dt>
-              <dd className="text-zinc-200 truncate">{app.meta?.status ?? "—"}</dd>
-            </dl>
           </div>
         )}
 
-        {phase >= 3 && app && (
-          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">
-              Prosecution scan
-            </div>
-            <div className="text-xs text-zinc-400 mb-2">
-              Scanned{" "}
-              <span className="text-zinc-200 font-mono">
-                {app.transactions.length}
-              </span>{" "}
-              transactions.
-            </div>
-            {detected ? (
-              <div className="text-xs">
-                <div className="text-emerald-400">
-                  ✓ Detected docketable event
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200">
-                    {detected.code}
-                  </span>
-                  <span className="text-zinc-300">
-                    {TRANSACTION_DESCRIPTIONS[detected.code] ??
-                      detected.description}
-                  </span>
-                  <span className="ml-auto font-mono text-zinc-500">
-                    {detected.date}
-                  </span>
-                </div>
+        {/* Preparing workspace card */}
+        {phase >= 4 && (
+          <div className="rounded-xl border border-blue-800/50 bg-blue-950/20 p-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-3">
+              <Sparkles
+                className={
+                  "h-4 w-4 text-blue-300 " + (!ready ? "animate-pulse" : "")
+                }
+              />
+              <div className="text-[15px] font-semibold text-blue-100">
+                {ready
+                  ? `Workspace prepared${
+                      detected?.code ? ` for ${detected.code} response` : ""
+                    }`
+                  : "Preparing workspace…"}
               </div>
-            ) : (
-              <div className="text-xs text-zinc-500">
-                No active docketable event detected.
+              {ready && (
+                <button
+                  onClick={onContinue}
+                  className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md bg-blue-500 hover:bg-blue-400 text-white text-xs font-semibold transition-colors"
+                >
+                  Continue
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {ready && (
+              <div className="mt-3 flex items-center justify-between text-[11px] text-blue-200/70">
+                <span>
+                  Opening workspace automatically in{" "}
+                  <span className="font-mono text-blue-100">{countdown}s</span>
+                </span>
+                <div className="h-1 flex-1 mx-4 rounded-full bg-blue-950 overflow-hidden">
+                  <div
+                    className="h-full bg-blue-400 transition-all duration-1000 ease-linear"
+                    style={{ width: `${(countdown / 10) * 100}%` }}
+                  />
+                </div>
               </div>
             )}
           </div>
         )}
       </main>
+    </div>
+  );
+}
+
+type TimelineEntry = {
+  code: string;
+  date: string;
+  description: string;
+  status: "selected" | "superseded" | "admin";
+};
+
+function buildDocketableTimeline(
+  txs: Transaction[],
+  selectedCode: string | undefined,
+): TimelineEntry[] {
+  const supersededByMap: Record<string, string[]> = SUPERSEDED_BY;
+  const rows: TimelineEntry[] = [];
+
+  // Sort newest-first, take up to 4 recent transactions of interest
+  const sorted = [...txs].sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  for (const t of sorted) {
+    if (rows.length >= 4) break;
+    const isDocketable = DOCKETABLE.includes(t.code);
+    const isAdmin = ["WIDS", "APP.FILE.REC", "NTC.PUB"].includes(t.code);
+    if (!isDocketable && !isAdmin) continue;
+
+    let status: TimelineEntry["status"] = "admin";
+    if (t.code === selectedCode) status = "selected";
+    else if (isDocketable && selectedCode) {
+      const supersededList = supersededByMap[t.code] ?? [];
+      if (supersededList.includes(selectedCode)) status = "superseded";
+      else status = "superseded";
+    }
+
+    rows.push({
+      code: t.code,
+      date: t.date,
+      description:
+        TRANSACTION_DESCRIPTIONS[t.code] ?? t.description ?? t.code,
+      status,
+    });
+  }
+
+  return rows;
+}
+
+function TimelineRow({ row }: { row: TimelineEntry }) {
+  const dotColor =
+    row.status === "selected"
+      ? "bg-emerald-400"
+      : row.status === "superseded"
+        ? "bg-blue-400"
+        : "bg-zinc-600";
+
+  const chipColor = eventColor(row.code).chip;
+  const label =
+    row.status === "selected"
+      ? "Selected — most recent docketable"
+      : row.status === "superseded"
+        ? "Superseded by newer event"
+        : "Administrative — skipped";
+  const labelColor =
+    row.status === "selected"
+      ? "text-emerald-300"
+      : row.status === "superseded"
+        ? "text-zinc-400"
+        : "text-zinc-500";
+
+  return (
+    <div className="flex items-center gap-3 text-xs">
+      <div className={"h-2 w-2 rounded-full shrink-0 " + dotColor} />
+      <div className="font-mono text-[11px] text-zinc-400 w-20 shrink-0">
+        {row.date}
+      </div>
+      <div
+        className={
+          "font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded border w-16 text-center shrink-0 " +
+          chipColor
+        }
+      >
+        {row.code}
+      </div>
+      <div className={"truncate " + labelColor}>{label}</div>
+    </div>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-2 w-2 rounded-full bg-zinc-800" />
+      <div className="h-3 w-20 rounded bg-zinc-800/70 animate-pulse" />
+      <div className="h-4 w-14 rounded bg-zinc-800/70 animate-pulse" />
+      <div className="h-3 flex-1 rounded bg-zinc-800/50 animate-pulse" />
     </div>
   );
 }
