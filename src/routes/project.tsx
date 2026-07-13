@@ -228,6 +228,7 @@ function LoadingState({
     { label: "Loading application details…", done: phase >= 2 },
     { label: "Scanning prosecution history…", done: phase >= 3 },
     { label: "Detecting docketable event…", done: phase >= 4 },
+    { label: "Opening workspace…", done: phase >= 5 },
   ];
   const currentIdx = steps.findIndex((s) => !s.done);
   return (
