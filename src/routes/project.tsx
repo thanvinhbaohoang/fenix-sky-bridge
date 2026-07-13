@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Workspace } from "@/components/demo/Workspace";
 import { SaveProjectNudge } from "@/components/SaveProjectNudge";
+import { detectEvent, TRANSACTION_DESCRIPTIONS } from "@/components/demo/data";
 import {
   fetchUsptoApplication,
   fetchUsptoDocuments,
@@ -69,6 +70,37 @@ function ProjectPage() {
     retry: 1,
   });
 
+  // Phased reveal: 0 fetching -> 1 got app info -> 2 scanning tx ->
+  // 3 detected event -> 4 ready. Makes the load feel like real work.
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    setPhase(0);
+  }, [cleanApp]);
+  useEffect(() => {
+    if (phase === 0 && appQuery.data) {
+      const t = setTimeout(() => setPhase(1), 200);
+      return () => clearTimeout(t);
+    }
+  }, [phase, appQuery.data]);
+  useEffect(() => {
+    if (phase === 1) {
+      const t = setTimeout(() => setPhase(2), 500);
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
+  useEffect(() => {
+    if (phase === 2 && txQuery.data) {
+      const t = setTimeout(() => setPhase(3), 500);
+      return () => clearTimeout(t);
+    }
+  }, [phase, txQuery.data]);
+  useEffect(() => {
+    if (phase === 3) {
+      const t = setTimeout(() => setPhase(4), 400);
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
+
   const goToApp = (nextApp: string) => {
     navigate({
       search: (prev: { app?: string; template?: string }) => ({
@@ -82,20 +114,31 @@ function ProjectPage() {
     return <AppNumberPrompt onSubmit={goToApp} />;
   }
 
-  if (appQuery.isLoading || txQuery.isLoading) {
-    return <LoadingState appNumber={rawApp} />;
-  }
-
   const err = appQuery.error || txQuery.error;
-  if (err || !appQuery.data) {
+  if (err) {
     return (
       <ErrorState
         message={(err as Error | null)?.message ?? "Failed to load application."}
         onRetry={() => {
           appQuery.refetch();
           txQuery.refetch();
+          setPhase(0);
         }}
         onChange={() => goToApp("")}
+      />
+    );
+  }
+
+  const partial = appQuery.data
+    ? toAppData(appQuery.data, txQuery.data, rawApp, template, docsQuery.data)
+    : null;
+
+  if (phase < 4 || !appQuery.data) {
+    return (
+      <LoadingState
+        appNumber={rawApp}
+        phase={phase}
+        app={partial}
       />
     );
   }
@@ -164,21 +207,23 @@ function AppNumberPrompt({ onSubmit }: { onSubmit: (v: string) => void }) {
   );
 }
 
-function LoadingState({ appNumber }: { appNumber: string }) {
-  const messages = [
-    "Fetching application data…",
-    "Scanning prosecution history for docketable events…",
-    "Identifying most recent docketable event…",
-    "Preparing workspace…",
+function LoadingState({
+  appNumber,
+  phase,
+  app,
+}: {
+  appNumber: string;
+  phase: number;
+  app: ReturnType<typeof toAppData> | null;
+}) {
+  const detected = app ? detectEvent(app.transactions) : undefined;
+  const steps = [
+    { label: "Fetching application data…", done: phase >= 1 },
+    { label: "Loading application details…", done: phase >= 2 },
+    { label: "Scanning prosecution history…", done: phase >= 3 },
+    { label: "Detecting docketable event…", done: phase >= 4 },
   ];
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const id = setInterval(
-      () => setIdx((i) => Math.min(i + 1, messages.length - 1)),
-      450,
-    );
-    return () => clearInterval(id);
-  }, [messages.length]);
+  const currentIdx = steps.findIndex((s) => !s.done);
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <div className="h-14 border-b border-zinc-800 flex items-center px-4">
@@ -190,40 +235,98 @@ function LoadingState({ appNumber }: { appNumber: string }) {
           Loading {appNumber}…
         </span>
       </div>
-      <div className="flex">
-        <aside className="w-[220px] border-r border-zinc-800 p-3 space-y-3">
-          <div className="h-4 bg-zinc-800 rounded animate-pulse" />
-          <div className="h-4 w-2/3 bg-zinc-800 rounded animate-pulse" />
-          <div className="h-3 w-1/2 bg-zinc-800 rounded animate-pulse" />
-          <div className="h-3 w-3/4 bg-zinc-800 rounded animate-pulse" />
-        </aside>
-        <main className="flex-1 p-6">
-          <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 font-mono text-[12px] leading-6 max-w-2xl">
-            <div className="text-zinc-500 mb-2">
-              Application {appNumber || "—"}
-            </div>
-            {messages.slice(0, idx + 1).map((m, i) => {
-              const isCurrent = i === idx;
-              return (
-                <div
-                  key={i}
-                  className={
-                    isCurrent ? "text-zinc-200" : "text-emerald-400"
-                  }
-                >
-                  {isCurrent ? (
-                    <span className="inline-block animate-pulse">▸</span>
-                  ) : (
-                    "✓"
-                  )}
-                  {"  "}
-                  {m}
-                </div>
-              );
-            })}
+      <main className="max-w-3xl mx-auto p-6 space-y-4">
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-4 font-mono text-[12px] leading-6">
+          <div className="text-zinc-500 mb-2">
+            Application {appNumber || "—"}
           </div>
-        </main>
-      </div>
+          {steps.map((s, i) => {
+            const isCurrent = i === currentIdx;
+            const isDone = s.done;
+            return (
+              <div
+                key={i}
+                className={
+                  isDone
+                    ? "text-emerald-400"
+                    : isCurrent
+                      ? "text-zinc-200"
+                      : "text-zinc-600"
+                }
+              >
+                {isDone ? "✓" : isCurrent ? (
+                  <span className="inline-block animate-pulse">▸</span>
+                ) : "·"}
+                {"  "}
+                {s.label}
+              </div>
+            );
+          })}
+        </div>
+
+        {phase >= 1 && app && (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">
+              Application details
+            </div>
+            <div className="text-sm font-semibold text-zinc-100 mb-2">
+              {app.title}
+            </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <dt className="text-zinc-500">App No.</dt>
+              <dd className="font-mono text-zinc-200">{app.appNumber}</dd>
+              <dt className="text-zinc-500">Filed</dt>
+              <dd className="text-zinc-200">{app.filingDate || "—"}</dd>
+              <dt className="text-zinc-500">Applicant</dt>
+              <dd className="text-zinc-200 truncate">{app.assignee}</dd>
+              <dt className="text-zinc-500">Examiner</dt>
+              <dd className="text-zinc-200 truncate">{app.examiner}</dd>
+              <dt className="text-zinc-500">Art Unit</dt>
+              <dd className="text-zinc-200">{app.artUnit}</dd>
+              <dt className="text-zinc-500">Status</dt>
+              <dd className="text-zinc-200 truncate">{app.meta?.status ?? "—"}</dd>
+            </dl>
+          </div>
+        )}
+
+        {phase >= 3 && app && (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="text-[11px] uppercase tracking-wider text-zinc-500 mb-2">
+              Prosecution scan
+            </div>
+            <div className="text-xs text-zinc-400 mb-2">
+              Scanned{" "}
+              <span className="text-zinc-200 font-mono">
+                {app.transactions.length}
+              </span>{" "}
+              transactions.
+            </div>
+            {detected ? (
+              <div className="text-xs">
+                <div className="text-emerald-400">
+                  ✓ Detected docketable event
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-200">
+                    {detected.code}
+                  </span>
+                  <span className="text-zinc-300">
+                    {TRANSACTION_DESCRIPTIONS[detected.code] ??
+                      detected.description}
+                  </span>
+                  <span className="ml-auto font-mono text-zinc-500">
+                    {detected.date}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-zinc-500">
+                No active docketable event detected.
+              </div>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }
