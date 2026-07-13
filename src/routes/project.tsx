@@ -71,7 +71,7 @@ function ProjectPage() {
   });
 
   // Phased reveal: 0 fetching -> 1 got app info -> 2 scanning tx ->
-  // 3 detected event -> 4 ready. Makes the load feel like real work.
+  // 3 detected event -> 4 ready -> 5 deliver to workspace after a 3s hold.
   const [phase, setPhase] = useState(0);
   useEffect(() => {
     setPhase(0);
@@ -97,6 +97,12 @@ function ProjectPage() {
   useEffect(() => {
     if (phase === 3) {
       const t = setTimeout(() => setPhase(4), 400);
+      return () => clearTimeout(t);
+    }
+  }, [phase]);
+  useEffect(() => {
+    if (phase === 4) {
+      const t = setTimeout(() => setPhase(5), 3000);
       return () => clearTimeout(t);
     }
   }, [phase]);
