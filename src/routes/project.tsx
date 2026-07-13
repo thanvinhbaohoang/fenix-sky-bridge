@@ -4,7 +4,15 @@ import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Workspace } from "@/components/demo/Workspace";
 import { SaveProjectNudge } from "@/components/SaveProjectNudge";
-import { detectEvent, TRANSACTION_DESCRIPTIONS } from "@/components/demo/data";
+import {
+  detectEvent,
+  DOCKETABLE,
+  SUPERSEDED_BY,
+  TRANSACTION_DESCRIPTIONS,
+  eventColor,
+} from "@/components/demo/data";
+import type { AppData, Transaction } from "@/components/demo/data";
+import { CheckCircle2, ScanLine, Sparkles, ArrowRight } from "lucide-react";
 import {
   fetchUsptoApplication,
   fetchUsptoDocuments,
@@ -102,7 +110,7 @@ function ProjectPage() {
   }, [phase]);
   useEffect(() => {
     if (phase === 4) {
-      const t = setTimeout(() => setPhase(5), 3000);
+      const t = setTimeout(() => setPhase(5), 600);
       return () => clearTimeout(t);
     }
   }, [phase]);
@@ -145,6 +153,17 @@ function ProjectPage() {
         appNumber={rawApp}
         phase={phase}
         app={partial}
+        onContinue={() => setPhase(6)}
+      />
+    );
+  }
+
+  if (phase < 6) {
+    return (
+      <ReadyState
+        appNumber={rawApp}
+        app={partial!}
+        onContinue={() => setPhase(6)}
       />
     );
   }
