@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { z } from "zod";
 import { Workspace } from "@/components/demo/Workspace";
+import { SaveProjectNudge } from "@/components/SaveProjectNudge";
 import {
   fetchUsptoApplication,
   fetchUsptoDocuments,
@@ -107,7 +108,15 @@ function ProjectPage() {
     docsQuery.data,
   );
 
-  return <Workspace app={appData} onChangeApp={() => goToApp("")} />;
+  return (
+    <>
+      <Workspace app={appData} onChangeApp={() => goToApp("")} />
+      <SaveProjectNudge
+        applicationNumber={appData.appNumber || cleanApp}
+        title={appData.title}
+      />
+    </>
+  );
 }
 
 function AppNumberPrompt({ onSubmit }: { onSubmit: (v: string) => void }) {

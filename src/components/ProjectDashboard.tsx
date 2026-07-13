@@ -101,7 +101,11 @@ const ProjectDashboard = () => {
             <Card
               key={project.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => navigate({ to: "/app/project/$id", params: { id: project.id } })}
+              onClick={() =>
+                project.status === "saved"
+                  ? navigate({ to: "/project", search: { app: project.application_number } })
+                  : navigate({ to: "/app/project/$id", params: { id: project.id } })
+              }
             >
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
