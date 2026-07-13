@@ -540,9 +540,14 @@ function StepNum({ n }: { n: number }) {
   );
 }
 
-export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () => void }) {
+export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (next?: string) => void }) {
   const autoDetected = useMemo(() => detectEvent(app.transactions), [app]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [appInput, setAppInput] = useState(app.appNumber);
+
+  useEffect(() => {
+    setAppInput(app.appNumber);
+  }, [app.appNumber]);
 
   // Reset the pinned event whenever the application changes.
   useEffect(() => {
@@ -729,22 +734,32 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: () 
       <div className="h-screen w-full bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
         {/* Topbar */}
         <header className="h-14 border-b border-zinc-800 bg-zinc-950 flex items-center px-4 gap-4 shrink-0">
-          <button onClick={onChangeApp} className="flex items-center gap-2">
+          <button onClick={() => onChangeApp("")} className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-zinc-100 text-zinc-950 flex items-center justify-center font-bold">F</div>
             <span className="font-semibold tracking-tight">FenixAI</span>
             <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700">Demo</span>
           </button>
-          <div className="flex-1 flex items-center gap-2 max-w-2xl mx-auto">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const v = appInput.trim();
+              if (v && v !== app.appNumber) onChangeApp(v);
+            }}
+            className="flex-1 flex items-center gap-2 max-w-2xl mx-auto"
+          >
+            <input
+              value={appInput}
+              onChange={(e) => setAppInput(e.target.value)}
+              placeholder="Enter application number"
+              className="flex-1 font-mono text-xs px-3 h-9 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-200 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 transition"
+            />
             <button
-              onClick={onChangeApp}
-              className="flex-1 text-left font-mono text-xs px-3 h-9 rounded-md bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-700 transition"
+              type="submit"
+              className="h-9 px-3 rounded-md bg-zinc-100 text-zinc-950 text-xs font-semibold hover:bg-white"
             >
-              {app.appNumber}
+              Open
             </button>
-            <button onClick={onChangeApp} className="h-9 px-3 rounded-md bg-zinc-100 text-zinc-950 text-xs font-semibold hover:bg-white">
-              Change application
-            </button>
-          </div>
+          </form>
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs text-zinc-500">{app.matter}</span>
             {detected && (
