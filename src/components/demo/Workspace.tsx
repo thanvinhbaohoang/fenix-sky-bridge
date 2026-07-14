@@ -1515,7 +1515,34 @@ function CitationTab({
         <span className="flex items-center gap-1"><SourceBadge s="IDS" /> IDS filed</span>
         <span className="flex items-center gap-1"><SourceBadge s="892" /> 892 art</span>
         <span className="flex items-center gap-1"><SourceBadge s="Manual" /> Manually added</span>
+        <button
+          onClick={populateFrom892}
+          disabled={populateState === "running"}
+          className={`ml-auto text-[11px] px-2.5 py-1 rounded border transition ${
+            populateState === "done"
+              ? "bg-purple-950/50 border-purple-700/60 text-purple-200"
+              : "border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200"
+          }`}
+          title={latest892 ? `Latest 892 dated ${latest892.officialDate}` : "No 892 form found in documents"}
+        >
+          {populateState === "running"
+            ? "⏳ Reading 892…"
+            : populateState === "done"
+              ? `✓ Populated from 892 (${populatedFrom?.officialDate ?? ""})`
+              : "📥 Populate from latest 892"}
+        </button>
       </div>
+      {populateState === "missing" && (
+        <div className="rounded border border-amber-700/60 bg-amber-950/30 px-3 py-2 text-[11px] text-amber-200">
+          No 892 (Notice of References Cited) form found in USPTO documents for this application.
+        </div>
+      )}
+      {populateState === "done" && populatedFrom && (
+        <div className="rounded border border-purple-700/60 bg-purple-950/30 px-3 py-2 text-[11px] text-purple-200">
+          Extracted references from 892 form dated <span className="font-mono">{populatedFrom.officialDate}</span>
+          {populatedFrom.pageCount ? ` · ${populatedFrom.pageCount} pages` : ""}.
+        </div>
+      )}
       <div className="rounded-lg border border-zinc-800 overflow-hidden">
         <table className="w-full text-xs">
           <thead className="bg-zinc-900 text-zinc-400">
