@@ -1218,7 +1218,7 @@ function AutomationTab({
   const c = eventColor(code);
   const winner = detectEvent(app.transactions);
   const template = emailTemplate(code, app);
-  const forms = FORMS_BY_EVENT[code] ?? [];
+  const forms = getFormsForEvent(code);
 
   const copy = () => {
     navigator.clipboard?.writeText(`Subject: ${template.subject}\n\n${template.body}`);
