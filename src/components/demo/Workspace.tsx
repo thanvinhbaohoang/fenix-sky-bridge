@@ -664,27 +664,9 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
   // reset state on app change
   useEffect(() => {
     setTab("workflow");
-    const base = (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t }));
-    // Merge deadline overrides saved from /template
-    try {
-      if (typeof window !== "undefined") {
-        const raw = window.localStorage.getItem("fenixai.templates.v1");
-        if (raw) {
-          const parsed = JSON.parse(raw) as Record<
-            string,
-            { tasks: Task[] }
-          >;
-          const overrideTasks = parsed?.[code]?.tasks;
-          if (Array.isArray(overrideTasks)) {
-            const byId = new Map(overrideTasks.map((t) => [t.id, t]));
-            for (const t of base) {
-              const o = byId.get(t.id);
-              if (o?.deadline) t.deadline = o.deadline;
-            }
-          }
-        }
-      }
-    } catch {}
+    // Load tasks from /template overrides (title, description, tag, tools,
+    // assignee, deadline) with fallback to defaults.
+    const base = getTasksForEvent(code);
     // Merge persisted "done" state for this (app, docket event)
     try {
       const doneIds = loadProjectDone(app.appNumber, activeKey);
