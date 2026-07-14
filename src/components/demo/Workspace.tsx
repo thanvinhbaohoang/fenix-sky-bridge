@@ -13,9 +13,7 @@ import {
   DOCKETABLE,
   EVENT_ICONS,
   EVENT_LABELS,
-  FORMS_BY_EVENT,
   Task,
-  TASKS_BY_EVENT,
   TRANSACTION_DESCRIPTIONS,
   Transaction,
   detectEvent,
@@ -24,6 +22,8 @@ import {
   statusBanner,
   Citation,
   getMailDate,
+  getTasksForEvent,
+  getFormsForEvent,
 } from "./data";
 import { useToast } from "@/hooks/use-toast";
 import { guessNameFromEmail } from "@/lib/name-from-email";
@@ -207,7 +207,7 @@ function DocketEventsCard({
   // avoids stale status right after a checkbox toggle.
   const statusFor = (key: string, code: string) => {
     const doneIds = loadProjectDone(appNumber, key);
-    const total = (TASKS_BY_EVENT[code] ?? []).length;
+    const total = getTasksForEvent(code).length;
     if (!total) {
       return { text: "No tasks defined", tone: "muted" as const, ratio: null };
     }
@@ -564,7 +564,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
   const code = detected?.code ?? "";
   const activeKey = detected ? `${detected.code}|${detected.date}` : "";
   const [tab, setTab] = useState<Tab>("workflow");
-  const [tasks, setTasks] = useState<Task[]>(() => (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t })));
+  const [tasks, setTasks] = useState<Task[]>(() => getTasksForEvent(code));
   const [expanded, setExpanded] = useState<string | null>(null);
   const [panel, setPanel] = useState<{ tool: string; task: Task } | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -662,27 +662,9 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
   // reset state on app change
   useEffect(() => {
     setTab("workflow");
-    const base = (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t }));
-    // Merge deadline overrides saved from /template
-    try {
-      if (typeof window !== "undefined") {
-        const raw = window.localStorage.getItem("fenixai.templates.v1");
-        if (raw) {
-          const parsed = JSON.parse(raw) as Record<
-            string,
-            { tasks: Task[] }
-          >;
-          const overrideTasks = parsed?.[code]?.tasks;
-          if (Array.isArray(overrideTasks)) {
-            const byId = new Map(overrideTasks.map((t) => [t.id, t]));
-            for (const t of base) {
-              const o = byId.get(t.id);
-              if (o?.deadline) t.deadline = o.deadline;
-            }
-          }
-        }
-      }
-    } catch {}
+    // Load tasks from /template overrides (title, description, tag, tools,
+    // assignee, deadline) with fallback to defaults.
+    const base = getTasksForEvent(code);
     // Merge persisted "done" state for this (app, docket event)
     try {
       const doneIds = loadProjectDone(app.appNumber, activeKey);
@@ -1234,7 +1216,7 @@ function AutomationTab({
   const c = eventColor(code);
   const winner = detectEvent(app.transactions);
   const template = emailTemplate(code, app);
-  const forms = FORMS_BY_EVENT[code] ?? [];
+  const forms = getFormsForEvent(code);
 
   const copy = () => {
     navigator.clipboard?.writeText(`Subject: ${template.subject}\n\n${template.body}`);
