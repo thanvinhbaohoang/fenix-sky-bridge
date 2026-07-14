@@ -209,7 +209,7 @@ function DocketEventsCard({
   // avoids stale status right after a checkbox toggle.
   const statusFor = (key: string, code: string) => {
     const doneIds = loadProjectDone(appNumber, key);
-    const total = (TASKS_BY_EVENT[code] ?? []).length;
+    const total = getTasksForEvent(code).length;
     if (!total) {
       return { text: "No tasks defined", tone: "muted" as const, ratio: null };
     }
