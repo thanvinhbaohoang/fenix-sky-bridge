@@ -906,7 +906,9 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
                   onAddContact={addContact}
                 />
               )}
-              {tab === "citation" && <CitationTab initial={app.citations} />}
+              {tab === "citation" && (
+                <CitationTab initial={app.citations} documents={app.documents} />
+              )}
               {tab === "overview" && <OverviewTab app={app} />}
               {tab === "history" && <HistoryTab app={app} winnerDate={detected?.date} />}
             </div>
@@ -919,6 +921,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
               app={app}
               code={code}
               initialCitations={app.citations}
+              documents={app.documents}
               onClose={() => setPanel(null)}
             />
           )}
