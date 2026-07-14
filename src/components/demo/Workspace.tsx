@@ -1831,12 +1831,14 @@ function SlidePanel({
   app,
   code,
   initialCitations,
+  documents,
   onClose,
 }: {
   tool: string;
   app: AppData;
   code: string;
   initialCitations: Citation[];
+  documents?: UsptoDocument[];
   onClose: () => void;
 }) {
   const template = emailTemplate(code, app);
@@ -1869,7 +1871,9 @@ function SlidePanel({
               </div>
             </>
           )}
-          {tool === "Citation tool" && <CitationTab initial={initialCitations} />}
+          {tool === "Citation tool" && (
+            <CitationTab initial={initialCitations} documents={documents} />
+          )}
           {tool === "Generate IDS" && (
             <>
               <div className="text-zinc-400">References to include:</div>
