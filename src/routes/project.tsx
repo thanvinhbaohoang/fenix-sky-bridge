@@ -86,34 +86,31 @@ function ProjectPage() {
   }, [cleanApp]);
   useEffect(() => {
     if (phase === 0 && appQuery.data) {
-      const t = setTimeout(() => setPhase(1), 600);
+      const t = setTimeout(() => setPhase(1), 300);
       return () => clearTimeout(t);
     }
   }, [phase, appQuery.data]);
   useEffect(() => {
     if (phase === 1) {
-      // Give the user time to read the fetched application details.
-      const t = setTimeout(() => setPhase(2), 2000);
+      const t = setTimeout(() => setPhase(2), 700);
       return () => clearTimeout(t);
     }
   }, [phase]);
   useEffect(() => {
     if (phase === 2 && txQuery.data) {
-      // Scanning prosecution history animation.
-      const t = setTimeout(() => setPhase(3), 1600);
+      const t = setTimeout(() => setPhase(3), 900);
       return () => clearTimeout(t);
     }
   }, [phase, txQuery.data]);
   useEffect(() => {
     if (phase === 3) {
-      // Let the detected docket event land and be read.
-      const t = setTimeout(() => setPhase(4), 2000);
+      const t = setTimeout(() => setPhase(4), 900);
       return () => clearTimeout(t);
     }
   }, [phase]);
   useEffect(() => {
     if (phase === 4) {
-      const t = setTimeout(() => setPhase(5), 900);
+      const t = setTimeout(() => setPhase(5), 600);
       return () => clearTimeout(t);
     }
   }, [phase]);
