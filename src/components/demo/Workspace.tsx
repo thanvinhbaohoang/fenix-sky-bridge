@@ -21,6 +21,7 @@ import {
   eventColor,
   statusBanner,
   Citation,
+  UsptoDocument,
   getMailDate,
   getTasksForEvent,
   getFormsForEvent,
@@ -1435,8 +1436,16 @@ function SourceBadge({ s }: { s: Citation["source"] }) {
   return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${m[s]}`}>{s}</span>;
 }
 
-function CitationTab({ initial }: { initial: Citation[] }) {
+function CitationTab({
+  initial,
+  documents,
+}: {
+  initial: Citation[];
+  documents?: UsptoDocument[];
+}) {
   const [rows, setRows] = useState<(Citation & { isNew?: boolean })[]>(initial);
+  const [populateState, setPopulateState] = useState<"idle" | "running" | "done" | "missing">("idle");
+  const [populatedFrom, setPopulatedFrom] = useState<UsptoDocument | null>(null);
   const [newRef, setNewRef] = useState("");
   const [newType, setNewType] = useState<Citation["type"]>("US Patent");
   const [crossState, setCrossState] = useState<"idle" | "running" | "done">("idle");
@@ -1463,6 +1472,34 @@ function CitationTab({ initial }: { initial: Citation[] }) {
   const runIds = () => {
     setIdsState("running");
     setTimeout(() => setIdsState("done"), 900);
+  };
+
+  const latest892 = (documents ?? [])
+    .filter((d) => (d.documentCode || "").toUpperCase() === "892")
+    .sort((a, b) => (a.officialDate < b.officialDate ? 1 : -1))[0];
+
+  const populateFrom892 = () => {
+    if (!latest892) {
+      setPopulateState("missing");
+      return;
+    }
+    setPopulateState("running");
+    setTimeout(() => {
+      const extracted: (Citation & { isNew?: boolean })[] = [
+        { reference: "US 10,482,901 B2", type: "US Patent", source: "892", pages: "24", isNew: true },
+        { reference: "US 2019/0312045 A1", type: "US Pub.", source: "892", pages: "15", isNew: true },
+        { reference: "US 9,876,543 B1", type: "US Patent", source: "892", pages: "19", isNew: true },
+        { reference: "EP 3,412,008 A1", type: "Foreign", source: "892", pages: "18", needsTranslation: true, isNew: true },
+        { reference: "WO 2020/145678 A1", type: "Foreign", source: "892", pages: "22", isNew: true },
+        { reference: "Smith et al., \"Neural Network Approaches to Classification,\" IEEE Trans. 2020", type: "NPL", source: "892", pages: "12", isNew: true },
+      ];
+      setRows((prev) => {
+        const existing = new Set(prev.map((r) => r.reference));
+        return [...prev, ...extracted.filter((r) => !existing.has(r.reference))];
+      });
+      setPopulatedFrom(latest892);
+      setPopulateState("done");
+    }, 1200);
   };
 
   const issues = rows.filter((r) => r.crossCite || r.needsTranslation);
