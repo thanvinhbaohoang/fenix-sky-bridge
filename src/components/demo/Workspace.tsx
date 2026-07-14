@@ -21,6 +21,7 @@ import {
   eventColor,
   statusBanner,
   Citation,
+  UsptoDocument,
   getMailDate,
   getTasksForEvent,
   getFormsForEvent,
@@ -906,7 +907,9 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
                   onAddContact={addContact}
                 />
               )}
-              {tab === "citation" && <CitationTab initial={app.citations} />}
+              {tab === "citation" && (
+                <CitationTab initial={app.citations} documents={app.documents} />
+              )}
               {tab === "overview" && <OverviewTab app={app} />}
               {tab === "history" && <HistoryTab app={app} winnerDate={detected?.date} />}
             </div>
@@ -919,6 +922,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
               app={app}
               code={code}
               initialCitations={app.citations}
+              documents={app.documents}
               onClose={() => setPanel(null)}
             />
           )}
@@ -1432,8 +1436,16 @@ function SourceBadge({ s }: { s: Citation["source"] }) {
   return <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${m[s]}`}>{s}</span>;
 }
 
-function CitationTab({ initial }: { initial: Citation[] }) {
+function CitationTab({
+  initial,
+  documents,
+}: {
+  initial: Citation[];
+  documents?: UsptoDocument[];
+}) {
   const [rows, setRows] = useState<(Citation & { isNew?: boolean })[]>(initial);
+  const [populateState, setPopulateState] = useState<"idle" | "running" | "done" | "missing">("idle");
+  const [populatedFrom, setPopulatedFrom] = useState<UsptoDocument | null>(null);
   const [newRef, setNewRef] = useState("");
   const [newType, setNewType] = useState<Citation["type"]>("US Patent");
   const [crossState, setCrossState] = useState<"idle" | "running" | "done">("idle");
@@ -1462,6 +1474,34 @@ function CitationTab({ initial }: { initial: Citation[] }) {
     setTimeout(() => setIdsState("done"), 900);
   };
 
+  const latest892 = (documents ?? [])
+    .filter((d) => (d.documentCode || "").toUpperCase() === "892")
+    .sort((a, b) => (a.officialDate < b.officialDate ? 1 : -1))[0];
+
+  const populateFrom892 = () => {
+    if (!latest892) {
+      setPopulateState("missing");
+      return;
+    }
+    setPopulateState("running");
+    setTimeout(() => {
+      const extracted: (Citation & { isNew?: boolean })[] = [
+        { reference: "US 10,482,901 B2", type: "US Patent", source: "892", pages: "24", isNew: true },
+        { reference: "US 2019/0312045 A1", type: "US Pub.", source: "892", pages: "15", isNew: true },
+        { reference: "US 9,876,543 B1", type: "US Patent", source: "892", pages: "19", isNew: true },
+        { reference: "EP 3,412,008 A1", type: "Foreign", source: "892", pages: "18", needsTranslation: true, isNew: true },
+        { reference: "WO 2020/145678 A1", type: "Foreign", source: "892", pages: "22", isNew: true },
+        { reference: "Smith et al., \"Neural Network Approaches to Classification,\" IEEE Trans. 2020", type: "NPL", source: "892", pages: "12", isNew: true },
+      ];
+      setRows((prev) => {
+        const existing = new Set(prev.map((r) => r.reference));
+        return [...prev, ...extracted.filter((r) => !existing.has(r.reference))];
+      });
+      setPopulatedFrom(latest892);
+      setPopulateState("done");
+    }, 1200);
+  };
+
   const issues = rows.filter((r) => r.crossCite || r.needsTranslation);
   const grouped = {
     us: rows.filter((r) => r.type === "US Patent" || r.type === "US Pub."),
@@ -1475,7 +1515,34 @@ function CitationTab({ initial }: { initial: Citation[] }) {
         <span className="flex items-center gap-1"><SourceBadge s="IDS" /> IDS filed</span>
         <span className="flex items-center gap-1"><SourceBadge s="892" /> 892 art</span>
         <span className="flex items-center gap-1"><SourceBadge s="Manual" /> Manually added</span>
+        <button
+          onClick={populateFrom892}
+          disabled={populateState === "running"}
+          className={`ml-auto text-[11px] px-2.5 py-1 rounded border transition ${
+            populateState === "done"
+              ? "bg-purple-950/50 border-purple-700/60 text-purple-200"
+              : "border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200"
+          }`}
+          title={latest892 ? `Latest 892 dated ${latest892.officialDate}` : "No 892 form found in documents"}
+        >
+          {populateState === "running"
+            ? "⏳ Reading 892…"
+            : populateState === "done"
+              ? `✓ Populated from 892 (${populatedFrom?.officialDate ?? ""})`
+              : "📥 Populate from latest 892"}
+        </button>
       </div>
+      {populateState === "missing" && (
+        <div className="rounded border border-amber-700/60 bg-amber-950/30 px-3 py-2 text-[11px] text-amber-200">
+          No 892 (Notice of References Cited) form found in USPTO documents for this application.
+        </div>
+      )}
+      {populateState === "done" && populatedFrom && (
+        <div className="rounded border border-purple-700/60 bg-purple-950/30 px-3 py-2 text-[11px] text-purple-200">
+          Extracted references from 892 form dated <span className="font-mono">{populatedFrom.officialDate}</span>
+          {populatedFrom.pageCount ? ` · ${populatedFrom.pageCount} pages` : ""}.
+        </div>
+      )}
       <div className="rounded-lg border border-zinc-800 overflow-hidden">
         <table className="w-full text-xs">
           <thead className="bg-zinc-900 text-zinc-400">
@@ -1791,12 +1858,14 @@ function SlidePanel({
   app,
   code,
   initialCitations,
+  documents,
   onClose,
 }: {
   tool: string;
   app: AppData;
   code: string;
   initialCitations: Citation[];
+  documents?: UsptoDocument[];
   onClose: () => void;
 }) {
   const template = emailTemplate(code, app);
@@ -1829,7 +1898,9 @@ function SlidePanel({
               </div>
             </>
           )}
-          {tool === "Citation tool" && <CitationTab initial={initialCitations} />}
+          {tool === "Citation tool" && (
+            <CitationTab initial={initialCitations} documents={documents} />
+          )}
           {tool === "Generate IDS" && (
             <>
               <div className="text-zinc-400">References to include:</div>
