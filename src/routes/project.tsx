@@ -150,7 +150,7 @@ function ProjectPage() {
     ? toAppData(appQuery.data, txQuery.data, rawApp, template, docsQuery.data)
     : null;
 
-  if (phase < 5 || !appQuery.data) {
+  if (phase < 6 || !appQuery.data) {
     return (
       <LoadingState
         appNumber={rawApp}
