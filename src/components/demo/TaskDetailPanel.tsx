@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  TASKS_BY_EVENT,
   EVENT_LABELS,
   EVENT_ICONS,
   eventColor,
   type Task,
+  getTasksForEvent,
+  findTaskInTemplates,
 } from "@/components/demo/data";
 import {
   MessageSquare,
@@ -45,27 +46,12 @@ type Activity = {
 type ResolvedTask = Task & { event?: string };
 
 function loadTaskFromTemplates(event: string, taskId: string): ResolvedTask | null {
-  const base = TASKS_BY_EVENT[event]?.find((t) => t.id === taskId);
-  if (!base) return null;
-  const clone: ResolvedTask = { ...base, tools: [...base.tools], event };
-  try {
-    if (typeof window !== "undefined") {
-      const raw = window.localStorage.getItem("fenixai.templates.v1");
-      if (raw) {
-        const parsed = JSON.parse(raw) as Record<string, { tasks: Task[] }>;
-        const override = parsed?.[event]?.tasks?.find((t) => t.id === taskId);
-        if (override) Object.assign(clone, override, { event });
-      }
-    }
-  } catch {}
-  return clone;
+  const t = getTasksForEvent(event).find((x) => x.id === taskId);
+  return t ? { ...t, tools: [...t.tools], event } : null;
 }
 
 function findEventForTask(taskId: string): string | undefined {
-  for (const [ev, list] of Object.entries(TASKS_BY_EVENT)) {
-    if (list.some((t) => t.id === taskId)) return ev;
-  }
-  return undefined;
+  return findTaskInTemplates(taskId)?.event;
 }
 
 export function TaskDetailPanel({
