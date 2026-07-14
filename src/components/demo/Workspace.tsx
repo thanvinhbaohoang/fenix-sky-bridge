@@ -566,7 +566,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
   const code = detected?.code ?? "";
   const activeKey = detected ? `${detected.code}|${detected.date}` : "";
   const [tab, setTab] = useState<Tab>("workflow");
-  const [tasks, setTasks] = useState<Task[]>(() => (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t })));
+  const [tasks, setTasks] = useState<Task[]>(() => getTasksForEvent(code));
   const [expanded, setExpanded] = useState<string | null>(null);
   const [panel, setPanel] = useState<{ tool: string; task: Task } | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
