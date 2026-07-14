@@ -91,6 +91,31 @@ function CodeBadge({ code }: { code: string }) {
   );
 }
 
+function statusBadgeClasses(status: string | undefined) {
+  const s = (status ?? "").toLowerCase();
+  if (s.includes("patented") || s.includes("granted") || s.includes("issued"))
+    return "bg-emerald-900/60 text-emerald-300 border-emerald-700/60";
+  if (s.includes("abandoned") || s.includes("expired"))
+    return "bg-red-900/60 text-red-300 border-red-700/60";
+  if (s.includes("allowed") || s.includes("notice of allowance") || s.includes("noa"))
+    return "bg-teal-900/60 text-teal-300 border-teal-700/60";
+  if (s.includes("pending") || s.includes("examined") || s.includes("docketed"))
+    return "bg-blue-900/60 text-blue-300 border-blue-700/60";
+  if (s.includes("published"))
+    return "bg-purple-900/60 text-purple-300 border-purple-700/60";
+  return "bg-zinc-800 text-zinc-400 border-zinc-700";
+}
+
+function AppStatusBadge({ status }: { status: string | undefined }) {
+  const label = status && status.trim() ? status : "Status unknown";
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusBadgeClasses(status)}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current" />
+      {label}
+    </span>
+  );
+}
+
 function Avatar({ name }: { name: string | null }) {
   if (!name) return <span className="text-[11px] text-zinc-500 italic">unassigned</span>;
   const initials = name.split(/[ .]+/).map((s) => s[0]).slice(0, 2).join("");
