@@ -452,3 +452,60 @@ export function statusBanner(code: string, app: AppData): { msg: string; sub: st
       return { msg: app.title, sub: "Awaiting next docketable event", chip: "—" };
   }
 }
+
+// ---- Template overrides (edited in /template, persisted in localStorage) ----
+
+export const TEMPLATE_STORAGE_KEY = "fenixai.templates.v1";
+
+type TemplateBucket = {
+  tasks?: Task[];
+  forms?: { name: string; ref: string }[];
+};
+
+function readTemplateOverrides(): Record<string, TemplateBucket> | null {
+  try {
+    if (typeof window === "undefined") return null;
+    const raw = window.localStorage.getItem(TEMPLATE_STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as Record<string, TemplateBucket>;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns the tasks for a given docket event, preferring the user's
+ * `/template` overrides when present. Falls back to defaults.
+ */
+export function getTasksForEvent(code: string): Task[] {
+  const overrides = readTemplateOverrides();
+  const override = overrides?.[code]?.tasks;
+  if (Array.isArray(override) && override.length > 0) {
+    return override.map((t) => ({ ...t, tools: [...(t.tools ?? [])] }));
+  }
+  return (TASKS_BY_EVENT[code] ?? []).map((t) => ({ ...t, tools: [...t.tools] }));
+}
+
+export function getFormsForEvent(code: string): { name: string; ref: string }[] {
+  const overrides = readTemplateOverrides();
+  const override = overrides?.[code]?.forms;
+  if (Array.isArray(override)) return override.map((f) => ({ ...f }));
+  return (FORMS_BY_EVENT[code] ?? []).map((f) => ({ ...f }));
+}
+
+export function findTaskInTemplates(
+  taskId: string,
+): { event: string; task: Task } | null {
+  const overrides = readTemplateOverrides();
+  if (overrides) {
+    for (const [ev, bucket] of Object.entries(overrides)) {
+      const t = bucket?.tasks?.find((x) => x.id === taskId);
+      if (t) return { event: ev, task: { ...t, tools: [...(t.tools ?? [])] } };
+    }
+  }
+  for (const [ev, list] of Object.entries(TASKS_BY_EVENT)) {
+    const t = list.find((x) => x.id === taskId);
+    if (t) return { event: ev, task: { ...t, tools: [...t.tools] } };
+  }
+  return null;
+}
