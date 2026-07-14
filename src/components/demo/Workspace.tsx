@@ -770,9 +770,7 @@ export function Workspace({ app, onChangeApp }: { app: AppData; onChangeApp: (ne
                 <div className="mt-2.5 space-y-1.5">
                   <div className="text-xs font-semibold leading-snug line-clamp-2">{app.title}</div>
                   <div>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${c.bg} ${c.text} ${c.border}`}>
-                      {EVENT_ICONS[code] ?? "●"} {code}
-                    </span>
+                    <AppStatusBadge status={app.meta?.status as string | undefined} />
                   </div>
                   <div className="space-y-1 text-[11px] text-zinc-400">
                     <div className="flex items-center gap-2">
